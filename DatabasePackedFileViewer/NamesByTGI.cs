@@ -4,24 +4,46 @@ using System.Collections.Generic;
 
 namespace DatabasePackedFileViewer
 {
+    public interface ViewerFactory
+    {
+        string getName(EntryModel model);
+
+    }
+
+    public class DefaultViewerFactory : ViewerFactory
+    {
+        private string name;
+
+        public DefaultViewerFactory(String s)
+        {
+            this.name = s;
+        }
+
+        public string getName(EntryModel model)
+        {
+            return name;
+        }
+    }
+
     public class NamesByTGI
     {
-        internal static Dictionary<TypeGroupInstance, String> NAMES = new Dictionary<TypeGroupInstance, String>();
+        internal static readonly ViewerFactory DEF_VIEW_FACT = new DefaultViewerFactory(null);
+        internal static readonly Dictionary<TypeGroupInstance, ViewerFactory> FACTS = new Dictionary<TypeGroupInstance, ViewerFactory>();
 
         static NamesByTGI()
         {
-            NAMES.Add(new TypeGroupInstance(0xca16374f, 0, 0), "Network Subfile 2");
-            NAMES.Add(new TypeGroupInstance(0xc9c05c6e, 0, 0), "Network Subfile 1");
-            NAMES.Add(new TypeGroupInstance(0x6a0f82b2, 0, 0), "Network Index Subfile");
+            FACTS.Add(new TypeGroupInstance(0xca16374f, 0, 0), new DefaultViewerFactory("Network Subfile 2"));
+            FACTS.Add(new TypeGroupInstance(0xc9c05c6e, 0, 0), new DefaultViewerFactory("Network Subfile 1"));
+            FACTS.Add(new TypeGroupInstance(0x6a0f82b2, 0, 0), new DefaultViewerFactory("Network Index Subfile"));
         }
 
-        public static string getNameFor(TypeGroupInstance tgi)
+        public static ViewerFactory getFor(TypeGroupInstance tgi)
         {
-            string name;
-            return NAMES.TryGetValue(tgi, out name)
-                || NAMES.TryGetValue(new TypeGroupInstance(tgi._typeId, tgi._instanceId, 0), out name)
-                || NAMES.TryGetValue(new TypeGroupInstance(tgi._typeId, 0, 0), out name)
-                ? name : null;
+            ViewerFactory fact;
+            return FACTS.TryGetValue(tgi, out fact)
+                || FACTS.TryGetValue(new TypeGroupInstance(tgi._typeId, tgi._instanceId, 0), out fact)
+                || FACTS.TryGetValue(new TypeGroupInstance(tgi._typeId, 0, 0), out fact)
+                ? fact : DEF_VIEW_FACT;
         }
     }
 }

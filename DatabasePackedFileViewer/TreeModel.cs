@@ -89,7 +89,7 @@ namespace DatabasePackedFileViewer
 
                         groupNode.Nodes.Add(n);
 
-                        var nodeName = nodesByNameModel.getNameForInstance(model.indexTableEntry);
+                        var nodeName = model.getCategory();
                         if (nodeName != null)
                             nodesByNameModel.addToName(nodeName, model);
                     }
@@ -145,20 +145,16 @@ namespace DatabasePackedFileViewer
             }
             nodes.Add(model);
         }
-
-        internal string getNameForInstance(IndexTableEntry indexTableEntry)
-        {
-            return NamesByTGI.getNameFor(indexTableEntry.tgi);
-        }
     }
 
-    internal class EntryModel : NodeModel
+    public class EntryModel : NodeModel
     {
         public readonly IndexTableEntry indexTableEntry;
         private readonly DBDirectoryEntry dBDirectoryEntry;
         public readonly TreeNode treeNode;
         public TreeNode TreeNode { get { return treeNode; } }
         private TabPage tabPage;
+        private readonly ViewerFactory factory;
 
         public TabPage TabPage
         {
@@ -178,11 +174,18 @@ namespace DatabasePackedFileViewer
 
             treeNode.Tag = this;
             treeNode.Text = ToString();
+
+            this.factory = NamesByTGI.getFor(indexTableEntry.tgi);
         }
 
         public override string ToString()
         {
             return dBDirectoryEntry == null ? indexTableEntry.ToString() : String.Format("{0},inflatedSz={1}", indexTableEntry, dBDirectoryEntry.size);
+        }
+
+        public string getCategory()
+        {
+            return factory.getName(this);
         }
     }
 }
