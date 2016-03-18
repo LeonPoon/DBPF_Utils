@@ -154,7 +154,7 @@ namespace DatabasePackedFileViewer
         public readonly TreeNode treeNode;
         public TreeNode TreeNode { get { return treeNode; } }
         private TabPage tabPage;
-        private readonly ViewerFactory factory;
+        public readonly ViewerFactory factory;
 
         public TabPage TabPage
         {

@@ -100,10 +100,10 @@ namespace DatabasePackedFileViewer
             treeModel.addOpenedFileNode(n);
         }
 
-        private void treeView1_DoubleClick(object sender, EventArgs e)
+        private void treeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             TreeView tv = (TreeView)sender;
-            var node = tv.SelectedNode as InstanceTreeNode;
+            var node = e.Node as InstanceTreeNode;
             if (node == null)
                 return;
 
@@ -116,7 +116,9 @@ namespace DatabasePackedFileViewer
 
             if (tabPage == null)
             {
-                tabPage = model.TabPage = new TabPage(model.ToString());
+                var view = model.factory.createView(model);
+                tabPage = model.TabPage = new TabPage(model.factory.getViewName(model));
+                tabPage.Controls.Add(view);
                 tabPage.Tag = model;
                 tabControl1.TabPages.Add(tabPage);
             }

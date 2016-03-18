@@ -1,13 +1,15 @@
 ﻿using System;
 using DBPF;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace DatabasePackedFileViewer
 {
     public interface ViewerFactory
     {
         string getName(EntryModel model);
-
+        string getViewName(EntryModel model);
+        Control createView(EntryModel model);
     }
 
     public class DefaultViewerFactory : ViewerFactory
@@ -19,9 +21,19 @@ namespace DatabasePackedFileViewer
             this.name = s;
         }
 
+        public Control createView(EntryModel model)
+        {
+            return new Label();
+        }
+
         public string getName(EntryModel model)
         {
             return name;
+        }
+
+        public string getViewName(EntryModel model)
+        {
+            return name ?? model.ToString();
         }
     }
 
