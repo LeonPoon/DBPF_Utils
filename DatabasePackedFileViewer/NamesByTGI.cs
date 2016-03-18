@@ -2,6 +2,8 @@
 using DBPF;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.IO.MemoryMappedFiles;
+using System.Text;
 
 namespace DatabasePackedFileViewer
 {
@@ -23,7 +25,28 @@ namespace DatabasePackedFileViewer
 
         public Control createView(EntryModel model)
         {
-            return new Label();
+            Control ctrl = null;
+            long sz;
+            var accessor = model.getAccessor(out sz);
+            try { return ctrl = createView(model, accessor, sz); }
+            catch { accessor.Dispose(); throw; }
+            finally
+            {
+                if (ctrl != null)
+                    ctrl.Tag = accessor;
+            }
+        }
+
+        private Control createView(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            byte[] bytes = new byte[sz];
+            accessor.ReadArray(0, bytes, 0, bytes.Length);
+            var lbl = new Label
+            {
+                Dock = DockStyle.Fill
+            };
+            lbl.Text = Encoding.ASCII.GetString(bytes);
+            return lbl;
         }
 
         public string getName(EntryModel model)

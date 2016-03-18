@@ -46,7 +46,7 @@ namespace DatabasePackedFileViewer
         TabPage TabPage { get; }
     }
 
-    internal class OpenedFileNode : NodeModel
+    public class OpenedFileNode : NodeModel
     {
         public readonly DBPFile dbpf;
         public readonly string fileName;
@@ -85,7 +85,7 @@ namespace DatabasePackedFileViewer
                         var inst = instances[instanceId];
                         DBDirectoryEntry dbDirEntry;
                         InstanceTreeNode n = new InstanceTreeNode();
-                        EntryModel model = new EntryModel(inst, dbpf.dbDirEntries.TryGetValue(inst.tgi, out dbDirEntry) ? dbDirEntry : null, n);
+                        EntryModel model = new EntryModel(this, inst, dbpf.dbDirEntries.TryGetValue(inst.tgi, out dbDirEntry) ? dbDirEntry : null, n);
 
                         groupNode.Nodes.Add(n);
 
@@ -155,6 +155,7 @@ namespace DatabasePackedFileViewer
         public TreeNode TreeNode { get { return treeNode; } }
         private TabPage tabPage;
         public readonly ViewerFactory factory;
+        public readonly OpenedFileNode fileNode;
 
         public TabPage TabPage
         {
@@ -162,12 +163,14 @@ namespace DatabasePackedFileViewer
             internal set { tabPage = value; }
         }
 
-        public EntryModel(IndexTableEntry indexTableEntry, TreeNode treeNode) : this(indexTableEntry, null, treeNode)
+        public EntryModel(OpenedFileNode fileNode, IndexTableEntry indexTableEntry, TreeNode treeNode) : this(fileNode, indexTableEntry, null, treeNode)
         {
         }
 
-        public EntryModel(IndexTableEntry indexTableEntry, DBDirectoryEntry dBDirectoryEntry, TreeNode treeNode)
+        public EntryModel(OpenedFileNode fileNode, IndexTableEntry indexTableEntry, DBDirectoryEntry dBDirectoryEntry, TreeNode treeNode)
         {
+            this.fileNode = fileNode;
+
             this.indexTableEntry = indexTableEntry;
             this.dBDirectoryEntry = dBDirectoryEntry;
             this.treeNode = treeNode;
@@ -186,6 +189,28 @@ namespace DatabasePackedFileViewer
         public string getCategory()
         {
             return factory.getName(this);
+        }
+
+        internal MemoryMappedViewAccessor getAccessor(out long sz)
+        {
+            sz = indexTableEntry.size;
+            var accessor = fileNode.mmf.CreateViewAccessor(indexTableEntry.fileOffset, sz, MemoryMappedFileAccess.Read);
+            if (dBDirectoryEntry == null)
+                return accessor;
+
+            try
+            {
+                sz = dBDirectoryEntry.size;
+                var mmf = MemoryMappedFile.CreateNew(Guid.NewGuid().ToString(), sz);
+                using (var accessor_w = mmf.CreateViewAccessor(0, sz, MemoryMappedFileAccess.ReadWrite))
+                    for (long decom = fileNode.dbpf.decompress(accessor, accessor_w); decom != sz;)
+                        throw new ArgumentOutOfRangeException(string.Format("decompressed bytes: expected={0}, actual={1}", sz, decom));
+                return mmf.CreateViewAccessor(0, sz, MemoryMappedFileAccess.Read);
+            }
+            finally
+            {
+                accessor.Dispose();
+            }
         }
     }
 }

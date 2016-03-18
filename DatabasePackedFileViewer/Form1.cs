@@ -154,13 +154,16 @@ namespace DatabasePackedFileViewer
                     else
                         node = node.Parent;
             }
-
             foreach (TabPage tab in tabpages)
-            {
-                ((EntryModel)tab.Tag).TabPage = null;
-                tab.Tag = null;
-                tabControl1.TabPages.Remove(tab);
-            }
+                closeTab(tabControl1, tab);
+        }
+
+        private void closeTab(TabControl tabControl1, TabPage tab)
+        {
+            ((IDisposable)tab.Controls[0].Tag).Dispose();
+            ((EntryModel)tab.Tag).TabPage = null;
+            tab.Tag = null;
+            tabControl1.TabPages.Remove(tab);
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
