@@ -33,7 +33,10 @@ namespace DatabasePackedFileViewer
             finally
             {
                 if (ctrl != null)
+                {
+                    ctrl.Dock = DockStyle.Fill;
                     ctrl.Tag = accessor;
+                }
             }
         }
 
@@ -44,10 +47,7 @@ namespace DatabasePackedFileViewer
 
             byte[] bytes = new byte[sz];
             accessor.ReadArray(0, bytes, 0, bytes.Length);
-            var lbl = new Label
-            {
-                Dock = DockStyle.Fill
-            };
+            var lbl = new Label();
             lbl.Text = Encoding.ASCII.GetString(bytes);
             return lbl;
         }
