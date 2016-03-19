@@ -127,7 +127,8 @@ namespace DatabasePackedFileViewer
             FACTS.Add(new TypeGroupInstance(0xca16374f, 0, 0), new DefaultViewerFactory("Network Subfile 2"));
             FACTS.Add(new TypeGroupInstance(0xc9c05c6e, 0, 0), new DefaultViewerFactory("Network Subfile 1"));
             FACTS.Add(new TypeGroupInstance(0x6a0f82b2, 0, 0), new DefaultViewerFactory("Network Index Subfile"));
-            FACTS.Add(new TypeGroupInstance(0x8a2482b9, 0x4a2482bb, 0), new DefaultViewerFactory("PNG"));
+            FACTS.Add(new TypeGroupInstance(0x8a2482b9, 0x4a2482bb, 0), new DefaultViewerFactory("Savegame PNG"));
+            FACTS.Add(new TypeGroupInstance(0x856DDBAC, 0, 0), new DefaultViewerFactory("PNG"));
         }
 
         public ViewerFactory getFor(TypeGroupInstance tgi)
