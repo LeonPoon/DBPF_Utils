@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             System.Windows.Forms.Panel panel2;
             System.Windows.Forms.Panel panel1;
             System.Windows.Forms.ToolStrip toolStrip1;
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.treeView1 = new System.Windows.Forms.TreeView();
             this.contextMenuStripTreeNodeRClick = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemCloseFile = new System.Windows.Forms.ToolStripMenuItem();
@@ -131,15 +131,15 @@
             this.toolStripOpenButton});
             toolStrip1.Location = new System.Drawing.Point(3, 0);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new System.Drawing.Size(66, 25);
+            toolStrip1.Size = new System.Drawing.Size(68, 25);
             toolStrip1.TabIndex = 0;
             // 
             // toolStripOpenButton
             // 
-            this.toolStripOpenButton.Image = ((System.Drawing.Image)(resources.GetObject("openToolStripMenuItem.Image")));
+            this.toolStripOpenButton.Image = ((System.Drawing.Image)(resources.GetObject("toolStripOpenButton.Image")));
             this.toolStripOpenButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripOpenButton.Name = "toolStripOpenButton";
-            this.toolStripOpenButton.Size = new System.Drawing.Size(23, 22);
+            this.toolStripOpenButton.Size = new System.Drawing.Size(56, 22);
             this.toolStripOpenButton.Text = "Open";
             this.toolStripOpenButton.Click += new System.EventHandler(this.toolStripOpenButton_Click);
             // 
@@ -248,8 +248,7 @@
             // 
             // openFileDialog1
             // 
-            this.openFileDialog1.FileName = "openFileDialog1";
-            this.openFileDialog1.Filter = "Simcity4 Saves|*.sc4";
+            this.openFileDialog1.Filter = "All Known DBPF|*.sc4;*.dat|Simcity4 Saves|*.sc4|DAT Files|*.dat";
             this.openFileDialog1.ReadOnlyChecked = true;
             this.openFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog1_FileOk);
             // 
@@ -270,7 +269,7 @@
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "DBPF";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.Shown += new System.EventHandler(this.Form1_Shown);
             panel2.ResumeLayout(false);
