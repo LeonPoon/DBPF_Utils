@@ -83,5 +83,15 @@ namespace DatabasePackedFileViewer
         {
             return filter;
         }
+
+        public string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            return string.Format("{0} Image", model);
+        }
+
+        public Control createControl(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            return new ImageDisplay(this, model, accessor, sz);
+        }
     }
 }

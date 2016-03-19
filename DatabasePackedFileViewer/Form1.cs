@@ -107,23 +107,39 @@ namespace DatabasePackedFileViewer
             if (node == null)
                 return;
 
-            openModel(node, (EntryModel)node.Tag);
+            openModel(node, node.Tag);
         }
 
         private void openModel(TreeNode node, EntryModel model)
         {
-            TabPage tabPage = model.TabPage;
+            XTabPage tabPage = model.TabPage;
 
             if (tabPage == null)
             {
-                var view = model.factory.createView(model);
-                tabPage = model.TabPage = new TabPage(model.factory.getViewName(model));
-                tabPage.Controls.Add(view);
-                tabPage.Tag = model;
-                tabControl1.TabPages.Add(tabPage);
+                long sz;
+                var accessor = model.getAccessor(out sz);
+                try
+                {
+                    var view = model.factory.createView(model, accessor, sz);
+                    tabPage = model.TabPage = new XTabPage(view);
+                    tabControl1.TabPages.Add(tabPage);
+                    tabPage.control.saveButton_Clicked += delegate (object sender, EventArgs e) { saveButton_Clicked((XTabPage)sender, e); };
+                    tabPage.control.closeButton_Clicked += delegate (object sender, EventArgs e) { closeButton_Clicked((XTabPage)sender, e); }; ;
+                }
+                catch { accessor.Dispose(); throw; }
             }
 
             tabControl1.SelectedTab = tabPage;
+        }
+
+        private void closeButton_Clicked(XTabPage sender, EventArgs e)
+        {
+            closeTab(tabControl1, sender);
+        }
+
+        private void saveButton_Clicked(XTabPage sender, EventArgs e)
+        {
+            saveFile(sender.Tag.model, sender.Text);
         }
 
         private void contextMenuStripTreeNodeRClick_Opening(object sender, CancelEventArgs e)
@@ -151,15 +167,15 @@ namespace DatabasePackedFileViewer
         {
             FileTreeNode n = (FileTreeNode)treeView1.SelectedNode;
             closeTabs(n);
-            treeModel.remove((OpenedFileNode)n.Tag);
+            treeModel.remove(n.Tag);
         }
 
         private void closeTabs(TreeNode rootNode)
         {
-            List<TabPage> tabpages = new List<TabPage>();
-            foreach (TabPage tab in tabControl1.TabPages)
+            List<XTabPage> tabpages = new List<XTabPage>();
+            foreach (XTabPage tab in tabControl1.TabPages)
             {
-                EntryModel m = (EntryModel)tab.Tag;
+                EntryModel m = tab.Tag.model;
                 TreeNode node = m.TreeNode;
                 while (node != null)
                     if (node == rootNode)
@@ -170,15 +186,13 @@ namespace DatabasePackedFileViewer
                     else
                         node = node.Parent;
             }
-            foreach (TabPage tab in tabpages)
+            foreach (XTabPage tab in tabpages)
                 closeTab(tabControl1, tab);
         }
 
-        private void closeTab(TabControl tabControl1, TabPage tab)
+        private void closeTab(TabControl tabControl1, XTabPage tab)
         {
-            ((IDisposable)tab.Controls[0].Tag).Dispose();
-            ((EntryModel)tab.Tag).TabPage = null;
-            tab.Tag = null;
+            tab.doClosing();
             tabControl1.TabPages.Remove(tab);
         }
 
@@ -202,7 +216,12 @@ namespace DatabasePackedFileViewer
         {
             InstanceTreeNode node = (InstanceTreeNode)treeView1.SelectedNode;
             var model = node.Tag;
-            saveFileDialog1.Title = string.Format("Save {0}", saveFileDialog1.FileName = node.Text);
+            saveFile(model, node.Text);
+        }
+
+        private void saveFile(EntryModel model, string fileName)
+        {
+            saveFileDialog1.Title = string.Format("Save {0}", saveFileDialog1.FileName = fileName);
 
             long sz;
             using (var r = model.getAccessor(out sz))

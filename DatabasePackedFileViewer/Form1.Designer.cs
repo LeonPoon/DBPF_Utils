@@ -36,6 +36,7 @@
             this.treeView1 = new System.Windows.Forms.TreeView();
             this.contextMenuStripTreeNodeRClick = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemCloseFile = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.toolStripOpenButton = new System.Windows.Forms.ToolStripButton();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
@@ -50,7 +51,6 @@
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.bgWorkerOpenFile = new System.ComponentModel.BackgroundWorker();
-            this.saveFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             panel2 = new System.Windows.Forms.Panel();
             panel1 = new System.Windows.Forms.Panel();
@@ -103,9 +103,16 @@
             // toolStripMenuItemCloseFile
             // 
             this.toolStripMenuItemCloseFile.Name = "toolStripMenuItemCloseFile";
-            this.toolStripMenuItemCloseFile.Size = new System.Drawing.Size(152, 22);
+            this.toolStripMenuItemCloseFile.Size = new System.Drawing.Size(124, 22);
             this.toolStripMenuItemCloseFile.Text = "Close File";
             this.toolStripMenuItemCloseFile.Click += new System.EventHandler(this.toolStripMenuItemCloseFile_Click);
+            // 
+            // saveFileToolStripMenuItem
+            // 
+            this.saveFileToolStripMenuItem.Name = "saveFileToolStripMenuItem";
+            this.saveFileToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.saveFileToolStripMenuItem.Text = "Save File";
+            this.saveFileToolStripMenuItem.Click += new System.EventHandler(this.saveFileToolStripMenuItem_Click);
             // 
             // panel1
             // 
@@ -131,11 +138,13 @@
             // toolStrip1
             // 
             toolStrip1.Dock = System.Windows.Forms.DockStyle.None;
+            toolStrip1.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripOpenButton});
             toolStrip1.Location = new System.Drawing.Point(3, 0);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new System.Drawing.Size(68, 25);
+            toolStrip1.Size = new System.Drawing.Size(90, 25);
+            toolStrip1.Stretch = true;
             toolStrip1.TabIndex = 0;
             // 
             // toolStripOpenButton
@@ -262,13 +271,6 @@
             this.bgWorkerOpenFile.WorkerSupportsCancellation = true;
             this.bgWorkerOpenFile.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgWorkerOpenFile_DoWork);
             this.bgWorkerOpenFile.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgWorkerOpenFile_RunWorkerCompleted);
-            // 
-            // saveFileToolStripMenuItem
-            // 
-            this.saveFileToolStripMenuItem.Name = "saveFileToolStripMenuItem";
-            this.saveFileToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.saveFileToolStripMenuItem.Text = "Save File";
-            this.saveFileToolStripMenuItem.Click += new System.EventHandler(this.saveFileToolStripMenuItem_Click);
             // 
             // Form1
             // 

@@ -8,6 +8,18 @@ namespace DatabasePackedFileViewer
 {
     internal class FileTreeNode : TreeNode
     {
+
+        public new OpenedFileNode Tag
+        {
+            get
+            {
+                return (OpenedFileNode)base.Tag;
+            }
+            set
+            {
+                base.Tag = value;
+            }
+        }
     }
 
     internal class InstanceTreeNode : TreeNode

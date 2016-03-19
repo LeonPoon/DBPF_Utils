@@ -7,50 +7,51 @@ using System.Text;
 
 namespace DatabasePackedFileViewer
 {
+    public class ViewModel : IDisposable
+    {
+        public readonly MemoryMappedViewAccessor accessor;
+        public readonly DisplayInfo disp;
+        public readonly EntryModel model;
+        public readonly long sz;
+
+        public ViewModel(EntryModel model, MemoryMappedViewAccessor accessor, long sz, DisplayInfo disp)
+        {
+            this.model = model;
+            this.accessor = accessor;
+            this.sz = sz;
+            this.disp = disp;
+        }
+
+        public void Dispose()
+        {
+            accessor.Dispose();
+        }
+
+        internal string getViewName()
+        {
+            return disp.getViewName(model, accessor, sz);
+        }
+    }
+
     public interface ViewerFactory
     {
-        string getName(EntryModel model);
-        string getViewName(EntryModel model);
-        Control createView(EntryModel model);
+        string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
+        string getCategoryName(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
+        ViewModel createView(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
         string getExtensionFilter(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
     }
 
     public interface DisplayInfo
     {
         string getExtensionFilter(MemoryMappedViewAccessor accessor, long sz);
+        string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
+        Control createControl(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
     }
 
-    public class DefaultViewerFactory : ViewerFactory
+    internal class BaseDisplayInfo : DisplayInfo
     {
-        private string name;
-
-        public DefaultViewerFactory(String s)
+        public Control createControl(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
         {
-            this.name = s;
-        }
-
-        public Control createView(EntryModel model)
-        {
-            Control ctrl = null;
-            long sz;
-            var accessor = model.getAccessor(out sz);
-            try { return ctrl = createView(model, accessor, sz); }
-            catch { accessor.Dispose(); throw; }
-            finally
-            {
-                if (ctrl != null)
-                {
-                    ctrl.Dock = DockStyle.Fill;
-                    ctrl.Tag = accessor;
-                }
-            }
-        }
-
-        private Control createView(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
-        {
-            for (var x = ImageDisplay.getImageFileInfo(accessor, sz); x != null;)
-                return new ImageDisplay(x, model, accessor, sz);
-
             byte[] bytes = new byte[sz];
             accessor.ReadArray(0, bytes, 0, bytes.Length);
             var lbl = new Label();
@@ -58,21 +59,55 @@ namespace DatabasePackedFileViewer
             return lbl;
         }
 
-        public string getName(EntryModel model)
+        public string getExtensionFilter(MemoryMappedViewAccessor accessor, long sz)
         {
+            return "Binary file|*.bin";
+        }
+
+        public string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            return model.ToString();
+        }
+    }
+
+    public class DefaultViewerFactory : ViewerFactory
+    {
+        private static DisplayInfo DEFAULT_DISPLAY_INFO = new BaseDisplayInfo();
+        private string name;
+
+        public DefaultViewerFactory(String s)
+        {
+            this.name = s;
+        }
+
+        public ViewModel createView(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            var disp = getDisplayInfo(model, accessor, sz);
+            var view = new ViewModel(model, accessor, sz, disp);
+            return view;
+        }
+
+        private DisplayInfo getDisplayInfo(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            for (var x = ImageDisplay.getImageFileInfo(accessor, sz); x != null;)
+                return x;
+            return DEFAULT_DISPLAY_INFO;
+        }
+
+        public string getCategoryName(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            // should detect instead
             return name;
         }
 
-        public string getViewName(EntryModel model)
+        public string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
         {
-            return name ?? model.ToString();
+            return name ?? getDisplayInfo(model, accessor, sz).getViewName(model, accessor, sz);
         }
 
         public string getExtensionFilter(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
         {
-            for (DisplayInfo x = ImageDisplay.getImageFileInfo(accessor, sz); x != null;)
-                return x.getExtensionFilter(accessor, sz);
-            return "Binary file|*.bin";
+            return getDisplayInfo(model, accessor, sz).getExtensionFilter(accessor, sz);
         }
     }
 

@@ -57,6 +57,12 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="MyTabPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="MyTabPage.Designer.cs">
+      <DependentUpon>MyTabPage.cs</DependentUpon>
+    </Compile>
     <Compile Include="NamesByTGI.cs" />
     <Compile Include="TreeNodes.cs" />
     <Compile Include="Program.cs" />
@@ -73,6 +79,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MyTabPage.resx">
+      <DependentUpon>MyTabPage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

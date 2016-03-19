@@ -43,7 +43,7 @@ namespace DatabasePackedFileViewer
     internal interface NodeModel
     {
         TreeNode TreeNode { get; }
-        TabPage TabPage { get; }
+        XTabPage TabPage { get; }
     }
 
     public class OpenedFileNode : NodeModel
@@ -53,7 +53,7 @@ namespace DatabasePackedFileViewer
         public readonly TreeNode treeNode = new FileTreeNode();
         internal readonly MemoryMappedFile mmf;
         public TreeNode TreeNode { get { return treeNode; } }
-        public TabPage TabPage { get { return null; } }
+        public XTabPage TabPage { get { return null; } }
         public readonly NamesByTGI namesProvider = new Simcity4NamesByTGI();
 
         public OpenedFileNode(string fileName, MemoryMappedFile mmf, DBPFile dbpf)
@@ -105,7 +105,7 @@ namespace DatabasePackedFileViewer
     {
         public readonly TreeNode treeNode;
         public TreeNode TreeNode { get { return treeNode; } }
-        public TabPage TabPage { get { return null; } }
+        public XTabPage TabPage { get { return null; } }
 
         public NodesByNameModel(string nodeName)
         {
@@ -129,7 +129,7 @@ namespace DatabasePackedFileViewer
         private readonly TreeNode rootNodeByName;
         public TreeNode TreeNode { get { return rootNodeByName; } }
 
-        public TabPage TabPage { get { return null; } }
+        public XTabPage TabPage { get { return null; } }
 
         public NodesByNameRootModel(TreeNode rootNodeByName)
         {
@@ -154,11 +154,11 @@ namespace DatabasePackedFileViewer
         private readonly DBDirectoryEntry dBDirectoryEntry;
         public readonly TreeNode treeNode;
         public TreeNode TreeNode { get { return treeNode; } }
-        private TabPage tabPage;
+        private XTabPage tabPage;
         public readonly ViewerFactory factory;
         public readonly OpenedFileNode fileNode;
 
-        public TabPage TabPage
+        public XTabPage TabPage
         {
             get { return tabPage; }
             internal set { tabPage = value; }
@@ -189,7 +189,7 @@ namespace DatabasePackedFileViewer
 
         public string getCategory()
         {
-            return factory.getName(this);
+            return factory.getCategoryName(this, null, 0);
         }
 
         internal MemoryMappedViewAccessor getAccessor(out long sz)
