@@ -54,6 +54,7 @@ namespace DatabasePackedFileViewer
         internal readonly MemoryMappedFile mmf;
         public TreeNode TreeNode { get { return treeNode; } }
         public TabPage TabPage { get { return null; } }
+        public readonly NamesByTGI namesProvider = new Simcity4NamesByTGI();
 
         public OpenedFileNode(string fileName, MemoryMappedFile mmf, DBPFile dbpf)
         {
@@ -178,7 +179,7 @@ namespace DatabasePackedFileViewer
             treeNode.Tag = this;
             treeNode.Text = ToString();
 
-            this.factory = NamesByTGI.getFor(indexTableEntry.tgi);
+            this.factory = fileNode.namesProvider.getFor(indexTableEntry.tgi);
         }
 
         public override string ToString()
