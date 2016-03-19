@@ -12,6 +12,17 @@ namespace DatabasePackedFileViewer
 
     internal class InstanceTreeNode : TreeNode
     {
+        public new EntryModel Tag
+        {
+            get
+            {
+                return (EntryModel)base.Tag;
+            }
+            set
+            {
+                base.Tag = value;
+            }
+        }
     }
 
     internal class SimpleTreeNode : TreeNode

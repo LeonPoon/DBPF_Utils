@@ -12,6 +12,12 @@ namespace DatabasePackedFileViewer
         string getName(EntryModel model);
         string getViewName(EntryModel model);
         Control createView(EntryModel model);
+        string getExtensionFilter(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
+    }
+
+    public interface DisplayInfo
+    {
+        string getExtensionFilter(MemoryMappedViewAccessor accessor, long sz);
     }
 
     public class DefaultViewerFactory : ViewerFactory
@@ -60,6 +66,13 @@ namespace DatabasePackedFileViewer
         public string getViewName(EntryModel model)
         {
             return name ?? model.ToString();
+        }
+
+        public string getExtensionFilter(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        {
+            for (DisplayInfo x = ImageDisplay.getImageFileInfo(accessor, sz); x != null;)
+                return x.getExtensionFilter(accessor, sz);
+            return "Binary file|*.bin";
         }
     }
 

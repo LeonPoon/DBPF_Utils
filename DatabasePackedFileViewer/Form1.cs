@@ -128,7 +128,23 @@ namespace DatabasePackedFileViewer
 
         private void contextMenuStripTreeNodeRClick_Opening(object sender, CancelEventArgs e)
         {
-            e.Cancel = !(treeView1.SelectedNode is FileTreeNode);
+            var strip = (ContextMenuStrip)sender;
+            showHideAllContextMenuItems(strip, false);
+
+            for (var n = treeView1.SelectedNode as FileTreeNode; n != null;)
+            {
+                toolStripMenuItemCloseFile.Visible = true;
+                return;
+            }
+
+            for (var n = treeView1.SelectedNode as InstanceTreeNode; n != null;)
+            {
+                saveFileToolStripMenuItem.Visible = true;
+                return;
+            }
+
+            showHideAllContextMenuItems(strip, true);
+            e.Cancel = true;
         }
 
         private void toolStripMenuItemCloseFile_Click(object sender, EventArgs e)
@@ -169,6 +185,44 @@ namespace DatabasePackedFileViewer
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             new AboutBox1().ShowDialog(this);
+        }
+
+        private void contextMenuStripTreeNodeRClick_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            showHideAllContextMenuItems((ContextMenuStrip)sender, true);
+        }
+
+        private void showHideAllContextMenuItems(ContextMenuStrip strip, bool v)
+        {
+            foreach (ToolStripItem i in strip.Items)
+                i.Visible = v;
+        }
+
+        private void saveFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            InstanceTreeNode node = (InstanceTreeNode)treeView1.SelectedNode;
+            var model = node.Tag;
+            saveFileDialog1.Title = string.Format("Save {0}", saveFileDialog1.FileName = node.Text);
+
+            long sz;
+            using (var r = model.getAccessor(out sz))
+            {
+                saveFileDialog1.Filter = model.factory.getExtensionFilter(model, r, sz);
+                saveFileDialog1.DefaultExt = saveFileDialog1.Filter.Split('|')[1].Split(new char[] { '.' }, 2)[1];
+                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    using (var w = saveFileDialog1.OpenFile())
+                    {
+                        byte[] bytes = new byte[4096];
+                        for (long pos = 0, s; sz > 0; pos += s, sz -= s)
+                        {
+                            s = sz > bytes.Length ? bytes.Length : sz;
+                            r.ReadArray(pos, bytes, 0, (int)s);
+                            w.Write(bytes, 0, (int)s);
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -50,6 +50,8 @@
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.bgWorkerOpenFile = new System.ComponentModel.BackgroundWorker();
+            this.saveFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             panel2 = new System.Windows.Forms.Panel();
             panel1 = new System.Windows.Forms.Panel();
             toolStrip1 = new System.Windows.Forms.ToolStrip();
@@ -91,15 +93,17 @@
             // contextMenuStripTreeNodeRClick
             // 
             this.contextMenuStripTreeNodeRClick.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuItemCloseFile});
+            this.toolStripMenuItemCloseFile,
+            this.saveFileToolStripMenuItem});
             this.contextMenuStripTreeNodeRClick.Name = "contextMenuStripTreeNodeRClick";
-            this.contextMenuStripTreeNodeRClick.Size = new System.Drawing.Size(125, 26);
+            this.contextMenuStripTreeNodeRClick.Size = new System.Drawing.Size(125, 48);
+            this.contextMenuStripTreeNodeRClick.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuStripTreeNodeRClick_Closed);
             this.contextMenuStripTreeNodeRClick.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripTreeNodeRClick_Opening);
             // 
             // toolStripMenuItemCloseFile
             // 
             this.toolStripMenuItemCloseFile.Name = "toolStripMenuItemCloseFile";
-            this.toolStripMenuItemCloseFile.Size = new System.Drawing.Size(124, 22);
+            this.toolStripMenuItemCloseFile.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItemCloseFile.Text = "Close File";
             this.toolStripMenuItemCloseFile.Click += new System.EventHandler(this.toolStripMenuItemCloseFile_Click);
             // 
@@ -259,6 +263,13 @@
             this.bgWorkerOpenFile.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgWorkerOpenFile_DoWork);
             this.bgWorkerOpenFile.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgWorkerOpenFile_RunWorkerCompleted);
             // 
+            // saveFileToolStripMenuItem
+            // 
+            this.saveFileToolStripMenuItem.Name = "saveFileToolStripMenuItem";
+            this.saveFileToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.saveFileToolStripMenuItem.Text = "Save File";
+            this.saveFileToolStripMenuItem.Click += new System.EventHandler(this.saveFileToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -314,6 +325,8 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemCloseFile;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveFileToolStripMenuItem;
+        private System.Windows.Forms.SaveFileDialog saveFileDialog1;
     }
 }
 
