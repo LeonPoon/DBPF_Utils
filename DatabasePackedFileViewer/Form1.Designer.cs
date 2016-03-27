@@ -52,6 +52,8 @@
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.bgWorkerOpenFile = new System.ComponentModel.BackgroundWorker();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.gCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             panel2 = new System.Windows.Forms.Panel();
             panel1 = new System.Windows.Forms.Panel();
             toolStrip1 = new System.Windows.Forms.ToolStrip();
@@ -141,9 +143,9 @@
             toolStrip1.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripOpenButton});
-            toolStrip1.Location = new System.Drawing.Point(3, 0);
+            toolStrip1.Location = new System.Drawing.Point(0, 0);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new System.Drawing.Size(90, 25);
+            toolStrip1.Size = new System.Drawing.Size(1096, 25);
             toolStrip1.Stretch = true;
             toolStrip1.TabIndex = 0;
             // 
@@ -160,6 +162,7 @@
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
+            this.toolsToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -272,6 +275,21 @@
             this.bgWorkerOpenFile.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgWorkerOpenFile_DoWork);
             this.bgWorkerOpenFile.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgWorkerOpenFile_RunWorkerCompleted);
             // 
+            // toolsToolStripMenuItem
+            // 
+            this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.gCToolStripMenuItem});
+            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
+            this.toolsToolStripMenuItem.Text = "&Tools";
+            // 
+            // gCToolStripMenuItem
+            // 
+            this.gCToolStripMenuItem.Name = "gCToolStripMenuItem";
+            this.gCToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.gCToolStripMenuItem.Text = "G&C";
+            this.gCToolStripMenuItem.Click += new System.EventHandler(this.gCToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -329,6 +347,8 @@
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveFileToolStripMenuItem;
         private System.Windows.Forms.SaveFileDialog saveFileDialog1;
+        private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem gCToolStripMenuItem;
     }
 }
 
