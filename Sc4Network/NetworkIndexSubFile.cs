@@ -204,14 +204,14 @@ namespace Sc4Network
                 _blocks[j] = NetworkIndexTileSubBlock.instantiate(accessor, j, pos, out pos);
 
             _blocks2F = new NetworkIndexTileUnknown2F[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
-            for (int j = 0; j < _blocks2F.Length; j++)
-                pos = (_blocks2F[j] = new NetworkIndexTileUnknown2F(i)).Read(accessor, pos);
+            for (uint j = 0; j < _blocks2F.Length; j++)
+                pos = (_blocks2F[j] = new NetworkIndexTileUnknown2F(j)).Read(accessor, pos);
 
             long detailStart = pos; pos = _detail.Read(accessor, pos); long detailSz = pos - detailStart;
 
             _blocksN = new NetworkIndexTileUnknownN[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
-            for (int j = 0; j < _blocksN.Length; j++)
-                pos = (_blocksN[j] = new NetworkIndexTileUnknownN(i)).Read(accessor, pos);
+            for (uint j = 0; j < _blocksN.Length; j++)
+                pos = (_blocksN[j] = new NetworkIndexTileUnknownN(j)).Read(accessor, pos);
 
             return new NetworkIndexTile(i, tileStart, headerSz, _header, _blocks, _blocks2F, detailStart, detailSz, _detail, _blocksN, pos);
         }
