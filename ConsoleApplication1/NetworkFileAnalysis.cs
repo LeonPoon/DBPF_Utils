@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using GenUtils;
 
 namespace ConsoleApplication1
 {
@@ -49,9 +50,50 @@ namespace ConsoleApplication1
             pos = checkSize(f.ReadResultComponents, 0);
             if (pos != sz)
                 throw new ArgumentException(string.Format("size check {0}: expect {1}, got pos={2}", outfile, sz, pos));
+            using (var sw = new StreamWriter(outfile))
+                writeOut(0, sw, f.ReadResultComponents, findMaxLen(0, f.ReadResultComponents), accessor);
             return pos;
         }
 
+        public const int INDENT_SPACES = 2;
+
+        public int findMaxLen(int lvl, ReadResult[] readResultComponents)
+        {
+            int len = 0;
+            foreach (var c in readResultComponents)
+            {
+                int nexLen = c.getName().Length + lvl * INDENT_SPACES;
+                if (nexLen > len) len = nexLen;
+                readResultComponents = c.ReadResultComponents;
+                if (readResultComponents != null)
+                {
+                    nexLen = findMaxLen(lvl + 1, readResultComponents);
+                    if (nexLen > len) len = nexLen;
+                }
+            }
+            return len;
+        }
+
+        public void writeOut(int level, StreamWriter sw, ReadResult[] readResultComponents, int maxLen, MemoryMappedViewAccessor accessor)
+        {
+            foreach (var c in readResultComponents)
+            {
+                var name = c.getName();
+                name = string.Format("{0}{1}{2}:",
+                    "                                                         ".Substring(0, level * INDENT_SPACES),
+                    name,
+                    ".........................................................".Substring(0, maxLen - level * INDENT_SPACES - name.Length)
+                    );
+                sw.Write(name);
+                printBytes(sw, accessor, c.Pos, (int)c.Bytes);
+
+                readResultComponents = c.ReadResultComponents;
+                if (readResultComponents != null)
+                {
+                    writeOut(level + 1, sw, readResultComponents, maxLen, accessor);
+                }
+            }
+        }
 
         private long printBytes(StreamWriter sw, MemoryMappedViewAccessor accessor, long pos, int len)
         {
