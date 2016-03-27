@@ -1,4 +1,21 @@
-﻿using DBPF;
+﻿/**************************************************************************
+ * Copyright 2016 Leon Poon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
+using DBPF;
+using GenUtils;
 using Sc4Network;
 using System;
 using System.IO;
@@ -10,32 +27,29 @@ namespace ConsoleApplication1
 
     class Program
     {
-        static void x(string f, Readable o)
+        static void x<T>(string f, T o) where T : struct, Readable
         {
             using (var m = MemoryMappedFile.CreateNew(Guid.NewGuid().ToString(), 10000))
             using (var w = m.CreateViewAccessor(0, 10000, MemoryMappedFileAccess.ReadWrite))
             {
-                Console.WriteLine("{0}: {1}", f, o.Read(w, 0));
+                Console.WriteLine("{0}: {1} Marshal={2}", f, o.Read(w, 0), Marshal.SizeOf(o.GetType()));
             }
         }
         static void Main(string[] args)
         {
-            x("NetworkIndexHeader", new NetworkIndexHeader());
-            x("NetworkIndexTileHeader", new NetworkIndexTileHeader());
-            x("NetworkIndexTileSubBlockHeader", new NetworkIndexTileSubBlockHeader());
-            x("NetworkIndexTileDetail", new NetworkIndexTileDetail());
-            x("NetworkIndexTileUnknown2F", new NetworkIndexTileUnknown2F());
-            x("NetworkIndexTileUnknownN", new NetworkIndexTileUnknownN());
-            x("NetworkIndexTileUnknown4", new NetworkIndexTileUnknown4());
-            x("NetworkIndexBlock", new NetworkIndexBlock());
-            x("NetworkIndexBlockV7", new NetworkIndexBlockV7());
-            x("NetworkIndexBlockUnknown4", new NetworkIndexBlockUnknown4());
-            x("NetworkIndexTrailer", new NetworkIndexTrailer());
-            x("NetworkIndexUnknownBlock4I", new NetworkIndexUnknownBlock4I());
-            x("NetworkIndexUnknownBlock", new NetworkIndexUnknownBlock());
-
-            Console.WriteLine("Press enter...");
-            Console.ReadLine();
+            x("NetworkIndexHeader", new NetworkIndexHeaderStruct());
+            x("NetworkIndexTileHeader", new NetworkIndexTileHeaderStruct());
+            x("NetworkIndexTileSubBlockHeader", new NetworkIndexTileSubBlockHeaderStruct());
+            x("NetworkIndexTileDetail", new NetworkIndexTileDetailStruct());
+            x("NetworkIndexTileUnknown2F", new NetworkIndexTileUnknown2FStruct());
+            x("NetworkIndexTileUnknownN", new NetworkIndexTileUnknownNStruct());
+            x("NetworkIndexTileUnknown4", new NetworkIndexTileUnknown4Struct());
+            x("NetworkIndexBlock", new NetworkIndexBlockPre7Struct());
+            x("NetworkIndexBlockV7", new NetworkIndexBlockV7Struct());
+            x("NetworkIndexBlockUnknown4", new NetworkIndexBlockUnknown4Struct());
+            x("NetworkIndexTrailer", new NetworkIndexTrailerStruct());
+            x("NetworkIndexUnknownBlock4I", new NetworkIndexUnknownBlock4IStruct());
+            x("NetworkIndexUnknownBlock", new NetworkIndexUnknownBlockStruct());
 
             //new NetworkFileAnalysis(@"Z:\Sc4Decode\network.bin", @"Z:\Sc4Decode\network.txt").runAnalysis();
             string fn;
@@ -112,7 +126,6 @@ namespace ConsoleApplication1
 
                         else if (en.Key == 0x6A0F82B2)
                         {
-                            NetworkIndexSubFile n1 = null;
                             long pos = 0;
                             Console.WriteLine(en2.Value);
                             using (var r = mmf.CreateViewAccessor(en2.Value.fileOffset, en2.Value.size, MemoryMappedFileAccess.Read))
@@ -122,63 +135,26 @@ namespace ConsoleApplication1
                                     using (var w = m.CreateViewAccessor(0, e.size, MemoryMappedFileAccess.ReadWrite))
                                     {
                                         f.decompress(r, w);
-                                        n1 = makeNetworkIndexSubFile(w, out pos, target, target2, e.size, sw);
+                                        makeNetworkIndexSubFile(w, out pos, target, target2, e.size, sw);
                                     }
                                 }
                                 else {
-                                    n1 = makeNetworkIndexSubFile(r, out pos, target, target2, en2.Value.size, sw);
+                                    makeNetworkIndexSubFile(r, out pos, target, target2, en2.Value.size, sw);
                                 }
 
-                            if (n1 != null)
-                            {
-                                Console.WriteLine("filesize={1}, read ended at {0:X8}({0})", pos, n1.header.fileSz);
-                                Console.WriteLine("tilesCount={0}, tilesEnd={1:X8}({1}), blocksCount={2}, blocksEnd={3:X8}({3}), trailerEnd={6:X8}({6}), unknownBlocksCount={4}, unknownBlocksEnd={5:X8}({5})",
-                                    n1.tiles.Length, n1.tilesEnd, n1.blocksV7 == null ? n1.blocks.Length : n1.blocksV7.Length, n1.blocksEnd, n1.unknownBlocks.Length, n1.unknownBlocksEnd,
-                                    n1.trailerEnd
-                                    );
-                            }
-
-                            var nodes = n1.treeNodes(delegate (string text, RecursiveTreeNode[] c) { return new RecursiveTreeNode(text, c); });
-                            continue;
-
-                            foreach (var node in nodes)
-                            {
-                                //   node.outConsole(0);
-                            }
                         }
                     }
             Console.WriteLine("Dir entry: {0}", f.dbDirEntries);
 
         }
 
-        public static NetworkIndexSubFile makeNetworkIndexSubFile(MemoryMappedViewAccessor a, out long pos, string binTarget, string txtTarget, long sz, StreamWriter w)
+        public static void makeNetworkIndexSubFile(MemoryMappedViewAccessor a, out long pos, string binTarget, string txtTarget, long sz, StreamWriter w)
         {
-            pos = 0;
-
             Console.Write("Saving bin: {0}", binTarget);
             save(a, binTarget, sz);
             Console.WriteLine(" ...done!");
 
-            NetworkIndexSubFile f = null;
-            //try
-            //{
-            //NetworkFileAnalysis f = new NetworkFileAnalysis(null, txtTarget, w).testNetworkFileAnalysis2(null, a, (uint)sz);
-
-            f = NetworkIndexSubFile.instantiate(a, out pos);
-            if (pos != sz)
-            {
-                throw new ArgumentException(string.Format("size check {0}: expect {1}, got pos={2}", binTarget, sz, pos));
-            }
-            //}
-            //catch (Exception e)
-            //{
-            //    NetworkIndexHeader h = new NetworkIndexHeader();
-            //    h.Read(a, 0);
-            //    w.WriteLine("{0}:{1}: {2}", txtTarget.PadRight(70), string.Format("v{0}", h.verMajor).PadRight(90), e.Message);
-            //    throw;
-            //}
-
-            return f;
+            pos = new NetworkFileAnalysis(null, txtTarget, w).testNetworkFileAnalysis(a, (uint)sz);
         }
 
         private static void save(MemoryMappedViewAccessor w, string target, long sz)

@@ -1,21 +1,28 @@
-﻿using System;
+﻿/**************************************************************************
+ * Copyright 2016 Leon Poon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
+using GenUtils;
+using System;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 
 namespace Sc4Network
 {
-    public interface Readable
-    {
-        long Read(MemoryMappedViewAccessor accessor, long pos);
-    }
-
-    public interface ReadableN : Readable
-    {
-        long Read(MemoryMappedViewAccessor accessor, long pos, uint index);
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 18)]
-    public struct NetworkIndexHeader : Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexHeaderStruct : Readable
     {
         public UInt32 fileSz; // DWORD Subfile Size in bytes
         public UInt32 crc; // DWORD   CRC
@@ -35,53 +42,53 @@ namespace Sc4Network
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 16)]
-    public struct NetworkIndexTileHeader : Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexTileHeaderStruct : Readable
     {
         public UInt32 tileNumber; // Tile Number(See Appendix 1.1 for more information)
         public UInt32 linkPtr; // DWORD   Memory address
         public UInt32 subfileTypeId; //  DWORD Link: Subfile Type ID (C9C05C6E or CA16374F or 49c1a034)
-        public UInt32 blockCount; //  DWORD    Count of blocks(either 0 or 10)
+        //public UInt32 blockCount; //  DWORD    Count of blocks(either 0 or 10)
 
         public long Read(MemoryMappedViewAccessor accessor, long pos)
         {
             tileNumber = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
             linkPtr = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
             subfileTypeId = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
-            blockCount = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            //blockCount = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
             return pos;
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)]
-    public struct NetworkIndexTileSubBlockHeader : Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexTileSubBlockHeaderStruct : Readable
     {
         public UInt32 blockNumber; // (first one is 0, last one is 9)
-        public UInt32 byte8Count; // (anything between 0-16. Number of byte blocks)
+        //public UInt32 byte8Count; // (anything between 0-16. Number of byte blocks)
         // BYTE×8   	Unknown block of bytes.Small numbers< 10
 
         public long Read(MemoryMappedViewAccessor accessor, long pos)
         {
             blockNumber = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
-            byte8Count = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            //byte8Count = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
             return pos;
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 67)]
-    public struct NetworkIndexTileDetail : Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexTileDetailStruct : Readable
     {
         public byte unknownByte; //   (always 0x00)
         //public UInt32 unknown1; // (always 0x00000000)
         public UInt32 unknown2; // (Seen 0 and 2)
         public UInt32 unknown3; // (Only seen 2)
         public UInt32 unknown4; // (Seen 0 and 4)
-        public NetworkIndexTileUnknown4 unknownBlock1;
-        public NetworkIndexTileUnknown4 unknownBlock2;
-        public NetworkIndexTileUnknown4 unknownBlock3;
-        public NetworkIndexTileUnknown4 unknownBlock4;
+        public NetworkIndexTileUnknown4Struct unknownBlock1;
+        public NetworkIndexTileUnknown4Struct unknownBlock2;
+        public NetworkIndexTileUnknown4Struct unknownBlock3;
+        public NetworkIndexTileUnknown4Struct unknownBlock4;
         public UInt16 unknownShort1; // (always 0)
-        public UInt32 blocksCount; // (always 2)
+        //public UInt32 blocksCount; // (always 2)
 
         public long Read(MemoryMappedViewAccessor accessor, long pos)
         {
@@ -95,12 +102,12 @@ namespace Sc4Network
             pos = unknownBlock3.Read(accessor, pos);
             pos = unknownBlock4.Read(accessor, pos);
             unknownShort1 = accessor.ReadUInt16(pos); pos += Marshal.SizeOf(typeof(UInt16));
-            blocksCount = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            //blocksCount = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
             return pos;
         }
     }
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)]
-    public struct NetworkIndexTileUnknown2F : TreeNodeProvider, Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexTileUnknown2FStruct : TreeNodeProvider, Readable
     {
         public float unknownFloat1;
         public float unknownFloat2;
@@ -121,8 +128,8 @@ namespace Sc4Network
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 10)]
-    public struct NetworkIndexTileUnknownN : TreeNodeProvider, Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexTileUnknownNStruct : TreeNodeProvider, Readable
     {
         public UInt32 blockNumber;
         public float unknownFloat;
@@ -146,8 +153,8 @@ namespace Sc4Network
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 12)]
-    public struct NetworkIndexTileUnknown4 : TreeNodeProvider, Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexTileUnknown4Struct : TreeNodeProvider, Readable
     {
         public float unknownFloat; // (Small values, e.g. 0.0, 2.0, 5.0, 6.0, 8.0)
         public UInt16 unknownShort1; // (0 or 1)
@@ -177,83 +184,113 @@ namespace Sc4Network
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 76)]
-    public struct NetworkIndexBlock : TreeNodeProvider, Readable
+    public interface INetworkIndexBlockStruct : TreeNodeProvider, Readable
     {
-        public UInt32 linkPtr; // DWORD   Memory address
-        public UInt32 subfileTypeId; //  DWORD Link: Subfile Type ID
-        public NetworkIndexBlockUnknown4 unknown1;
-        public NetworkIndexBlockUnknown4 unknown2;
-        public NetworkIndexBlockUnknown4 unknown3;
-        public NetworkIndexBlockUnknown4 unknown4;
+        UInt32 linkPtr { get; } // DWORD   Memory address
+        UInt32 subfileTypeId { get; } //  DWORD Link: Subfile Type ID
+        byte unknownByte { get; } // (only seen 0x00)
+        UInt32 unknown { get; } //(only seen 0x00000000)
+        NetworkIndexBlockUnknown4Struct unknown1 { get; }
+        NetworkIndexBlockUnknown4Struct unknown2 { get; }
+        NetworkIndexBlockUnknown4Struct unknown3 { get; }
+        NetworkIndexBlockUnknown4Struct unknown4 { get; }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexBlockPre7Struct : INetworkIndexBlockStruct
+    {
+        private UInt32 _linkPtr; // DWORD   Memory address
+        private UInt32 _subfileTypeId; //  DWORD Link: Subfile Type ID
+        private NetworkIndexBlockUnknown4Struct _unknown1;
+        private NetworkIndexBlockUnknown4Struct _unknown2;
+        private NetworkIndexBlockUnknown4Struct _unknown3;
+        private NetworkIndexBlockUnknown4Struct _unknown4;
+
+        public uint linkPtr { get { return _linkPtr; } }
+        public uint subfileTypeId { get { return _subfileTypeId; } }
+        public byte unknownByte { get { return 0; } }
+        public uint unknown { get { return 0; } }
+        public NetworkIndexBlockUnknown4Struct unknown1 { get { return _unknown1; } }
+        public NetworkIndexBlockUnknown4Struct unknown2 { get { return _unknown2; } }
+        public NetworkIndexBlockUnknown4Struct unknown3 { get { return _unknown3; } }
+        public NetworkIndexBlockUnknown4Struct unknown4 { get { return _unknown4; } }
 
         public long Read(MemoryMappedViewAccessor accessor, long pos)
         {
-            linkPtr = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
-            subfileTypeId = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
-            pos = unknown1.Read(accessor, pos);
-            pos = unknown2.Read(accessor, pos);
-            pos = unknown3.Read(accessor, pos);
-            pos = unknown4.Read(accessor, pos);
+            _linkPtr = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            _subfileTypeId = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            pos = _unknown1.Read(accessor, pos);
+            pos = _unknown2.Read(accessor, pos);
+            pos = _unknown3.Read(accessor, pos);
+            pos = _unknown4.Read(accessor, pos);
             return pos;
         }
 
         public T[] treeNodes<T>(TreeNodeMaker<T> maker)
         {
             return new T[] {
-                maker(string.Format("unknown: {0:X8}", linkPtr), null),
-                maker(string.Format("unknown: {0:X8}", subfileTypeId), null),
-                maker(string.Format("unknown: {0}", 0), unknown1.treeNodes(maker)),
-                maker(string.Format("unknown: {0}", 1), unknown2.treeNodes(maker)),
-                maker(string.Format("unknown: {0}", 2), unknown3.treeNodes(maker)),
-                maker(string.Format("unknown: {0}", 3), unknown4.treeNodes(maker)),
+                maker(string.Format("unknown: {0:X8}", _linkPtr), null),
+                maker(string.Format("unknown: {0:X8}", _subfileTypeId), null),
+                maker(string.Format("unknown: {0}", 0), _unknown1.treeNodes(maker)),
+                maker(string.Format("unknown: {0}", 1), _unknown2.treeNodes(maker)),
+                maker(string.Format("unknown: {0}", 2), _unknown3.treeNodes(maker)),
+                maker(string.Format("unknown: {0}", 3), _unknown4.treeNodes(maker)),
             };
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 81)]
-    public struct NetworkIndexBlockV7 : TreeNodeProvider, Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexBlockV7Struct : INetworkIndexBlockStruct
     {
-        public UInt32 linkPtr; // DWORD   Memory address
-        public UInt32 subfileTypeId; //  DWORD Link: Subfile Type ID
-        public byte unknownByte; // (only seen 0x00)
-        public UInt32 unknown; //(only seen 0x00000000)
-        public NetworkIndexBlockUnknown4 unknown1;
-        public NetworkIndexBlockUnknown4 unknown2;
-        public NetworkIndexBlockUnknown4 unknown3;
-        public NetworkIndexBlockUnknown4 unknown4;
+        private UInt32 _linkPtr; // DWORD   Memory address
+        private UInt32 _subfileTypeId; //  DWORD Link: Subfile Type ID
+        private byte _unknownByte; // (only seen 0x00)
+        private UInt32 _unknown; //(only seen 0x00000000)
+        private NetworkIndexBlockUnknown4Struct _unknown1;
+        private NetworkIndexBlockUnknown4Struct _unknown2;
+        private NetworkIndexBlockUnknown4Struct _unknown3;
+        private NetworkIndexBlockUnknown4Struct _unknown4;
+
+        public uint linkPtr { get { return _linkPtr; } }
+        public uint subfileTypeId { get { return _subfileTypeId; } }
+        public byte unknownByte { get { return _unknownByte; } }
+        public uint unknown { get { return _unknown; } }
+        public NetworkIndexBlockUnknown4Struct unknown1 { get { return _unknown1; } }
+        public NetworkIndexBlockUnknown4Struct unknown2 { get { return _unknown2; } }
+        public NetworkIndexBlockUnknown4Struct unknown3 { get { return _unknown3; } }
+        public NetworkIndexBlockUnknown4Struct unknown4 { get { return _unknown4; } }
 
         public long Read(MemoryMappedViewAccessor accessor, long pos)
         {
-            linkPtr = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
-            subfileTypeId = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
-            unknownByte = accessor.ReadByte(pos++);
-            unknown = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
-            pos = unknown1.Read(accessor, pos);
-            pos = unknown2.Read(accessor, pos);
-            pos = unknown3.Read(accessor, pos);
-            pos = unknown4.Read(accessor, pos);
+            _linkPtr = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            _subfileTypeId = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            _unknownByte = accessor.ReadByte(pos++);
+            _unknown = accessor.ReadUInt32(pos); pos += Marshal.SizeOf(typeof(UInt32));
+            pos = _unknown1.Read(accessor, pos);
+            pos = _unknown2.Read(accessor, pos);
+            pos = _unknown3.Read(accessor, pos);
+            pos = _unknown4.Read(accessor, pos);
             return pos;
         }
 
         public T[] treeNodes<T>(TreeNodeMaker<T> maker)
         {
             return new T[] {
-                maker(string.Format("unknown: {0:X8}", linkPtr), null),
-                maker(string.Format("unknown: {0:X8}", subfileTypeId), null),
-                maker(string.Format("unknown: {0:X}", unknownByte), null),
-                maker(string.Format("unknown: {0:X8}", unknown), null),
-                maker(string.Format("unknown: {0}", 0), unknown1.treeNodes(maker)),
-                maker(string.Format("unknown: {0}", 1), unknown2.treeNodes(maker)),
-                maker(string.Format("unknown: {0}", 2), unknown3.treeNodes(maker)),
-                maker(string.Format("unknown: {0}", 3), unknown4.treeNodes(maker)),
+                maker(string.Format("unknown: {0:X8}", _linkPtr), null),
+                maker(string.Format("unknown: {0:X8}", _subfileTypeId), null),
+                maker(string.Format("unknown: {0:X}", _unknownByte), null),
+                maker(string.Format("unknown: {0:X8}", _unknown), null),
+                maker(string.Format("unknown: {0}", 0), _unknown1.treeNodes(maker)),
+                maker(string.Format("unknown: {0}", 1), _unknown2.treeNodes(maker)),
+                maker(string.Format("unknown: {0}", 2), _unknown3.treeNodes(maker)),
+                maker(string.Format("unknown: {0}", 3), _unknown4.treeNodes(maker)),
             };
         }
     }
 
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 17)]
-    public struct NetworkIndexBlockUnknown4 : TreeNodeProvider, Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexBlockUnknown4Struct : TreeNodeProvider, Readable
     {
         public UInt32 unknown32; //(Either 0, 1, 2 or 3)
         public bool unknownBool; // (Either 0 or 1, false or true)
@@ -283,8 +320,8 @@ namespace Sc4Network
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 26)]
-    public struct NetworkIndexTrailer : Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexTrailerStruct : Readable
     {
         //public UInt32 unknown1; //(only seen 0x00000000)
         public UInt32 unknown2; //(only seen 0x00000000)
@@ -312,8 +349,8 @@ namespace Sc4Network
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 16)]
-    public struct NetworkIndexUnknownBlock4I : TreeNodeProvider, Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexUnknownBlock4IStruct : TreeNodeProvider, Readable
     {
         public UInt32 unknown1;
         public UInt32 unknown2;
@@ -340,8 +377,8 @@ namespace Sc4Network
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 40)]
-    public struct NetworkIndexUnknownBlock : TreeNodeProvider, Readable
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct NetworkIndexUnknownBlockStruct : TreeNodeProvider, Readable
     {
         public UInt32 ptr;
         public UInt32 subfileTypeId;

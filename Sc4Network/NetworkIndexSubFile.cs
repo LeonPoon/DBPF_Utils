@@ -1,21 +1,48 @@
-﻿using System;
+﻿/**************************************************************************
+ * Copyright 2016 Leon Poon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
+using GenUtils;
+using System;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 
 namespace Sc4Network
 {
-    public delegate T TreeNodeMaker<T>(string text, T[] children);
-
-    public class NetworkIndexTileSubBlock : TreeNodeProvider
+    public class NetworkIndexTileSubBlock : TreeNodeProvider, ReadResultN
     {
         public const int BLOCK_SZ = 8;
-        public readonly NetworkIndexTileSubBlockHeader header;
+        public readonly uint index;
+        public readonly long headerStart, headerSz;
+        public readonly NetworkIndexTileSubBlockHeaderStruct header;
         public readonly byte[,] byteBlocks;
+        private readonly long sz;
 
-        public NetworkIndexTileSubBlock(NetworkIndexTileSubBlockHeader header, byte[,] byteBlocks)
+        public long Pos { get { return headerStart; } }
+        public long Bytes { get { return 0; } }
+        public long Sz { get { return sz; } }
+        public uint Index { get { return index; } }
+
+        public NetworkIndexTileSubBlock(uint index, NetworkIndexTileSubBlockHeaderStruct header, long headerStart, long headerSz, byte[,] byteBlocks, long sz)
         {
+            this.index = index;
+            this.headerStart = headerStart;
+            this.headerSz = headerSz;
             this.header = header;
             this.byteBlocks = byteBlocks ?? new byte[0, BLOCK_SZ];
+            this.sz = sz;
         }
 
         public T[] treeNodes<T>(TreeNodeMaker<T> maker)
@@ -31,47 +58,114 @@ namespace Sc4Network
 
             return new T[] {
                 maker(string.Format("blockNumber: {0}", header.blockNumber), null),
-                maker(string.Format("byte8Count: {0}", header.byte8Count), bt),
+                maker(string.Format("byte8Count: {0}", byteBlocks.GetLength(0)), bt),
             };
         }
 
-        internal static NetworkIndexTileSubBlock instantiate(MemoryMappedViewAccessor accessor, long start, out long pos)
+        internal static NetworkIndexTileSubBlock instantiate(MemoryMappedViewAccessor accessor, uint index, long start, out long pos)
         {
-            NetworkIndexTileSubBlockHeader __header = new NetworkIndexTileSubBlockHeader();
+            NetworkIndexTileSubBlockHeaderStruct __header = new NetworkIndexTileSubBlockHeaderStruct();
             byte[,] byteBlocks;
 
-            pos = __header.Read(accessor, start);
-            byteBlocks = new byte[__header.byte8Count, BLOCK_SZ];
+            pos = __header.Read(accessor, start); long headerSz = pos - start;
+            byteBlocks = new byte[accessor.ReadUInt32(pos), BLOCK_SZ]; pos += Marshal.SizeOf(typeof(UInt32));
 
-            for (int k = 0; k < __header.byte8Count; k++)
+            for (int k = 0; k < byteBlocks.GetLength(0); k++)
                 for (int i = 0; i < BLOCK_SZ; i++)
                     byteBlocks[k, i] = accessor.ReadByte(pos++);
+            long sz = pos - start;
 
-            return new NetworkIndexTileSubBlock(__header, byteBlocks);
+            return new NetworkIndexTileSubBlock(index, __header, start, headerSz, byteBlocks, sz);
+        }
+
+        public ReadResult[] ReadResultComponents
+        {
+            get
+            {
+                var r = new ReadResult[byteBlocks.GetLength(0)];
+                for (int i = 0; i < r.Length; i++)
+                    r[i] = new ReadResultWrapper(headerStart + headerSz + Marshal.SizeOf(typeof(UInt32)) + i * byteBlocks.GetLength(1), byteBlocks.GetLength(1), string.Format("NetworkIndexTileSubBlock8Bytes[{0}]", i));
+                return new ReadResult[] {
+                    new ReadResultWrapper(headerStart, headerSz, "NetworkIndexTileSubBlockHeader"),
+                    new ReadResultWrapper(headerStart+ headerSz, Marshal.SizeOf(typeof(UInt32)), Marshal.SizeOf(typeof(UInt32)) + r.Length * byteBlocks.GetLength(1), "byteBlocks", r),
+                };
+            }
+        }
+
+        public string getName()
+        {
+            return string.Format("NetworkIndexTileSubBlock[{0}]", Index);
         }
     }
-    public class NetworkIndexTile : TreeNodeProvider
+
+    public class NetworkIndexTileUnknown2F : StructTreeNodeProviderReadResult<NetworkIndexTileUnknown2FStruct>
     {
-        public readonly long tileStart;
-        public readonly NetworkIndexTileHeader header;
+        public NetworkIndexTileUnknown2F(uint index) : base(string.Format("NetworkIndexTileUnknown2F[{0}]", index)) { }
+    }
+
+    public class NetworkIndexTileUnknownN : StructTreeNodeProviderReadResult<NetworkIndexTileUnknownNStruct>
+    {
+        public NetworkIndexTileUnknownN(uint index) : base(string.Format("NetworkIndexTileUnknownN[{0}]", index)) { }
+    }
+
+    public class NetworkIndexTile : TreeNodeProvider, ReadResultN
+    {
+        private readonly uint index;
+        public readonly long tileStart, headerSz;
+        public readonly NetworkIndexTileHeaderStruct header;
         public readonly NetworkIndexTileSubBlock[] blocks;
-        public readonly NetworkIndexTileDetail detail;
+        public readonly long detailStart, detailSz;
+        public readonly NetworkIndexTileDetailStruct detail;
         public readonly NetworkIndexTileUnknown2F[] unknown2FloatBlocks;
         public readonly NetworkIndexTileUnknownN[] unknownBlocks;
+        private readonly long sz;
 
-        public NetworkIndexTile(long tileStart,
-            NetworkIndexTileHeader header,
+        public long Bytes { get { return 0; } }
+        public uint Index { get { return index; } }
+        public long Pos { get { return tileStart; } }
+        public long Sz { get { return sz; } }
+
+        public NetworkIndexTile(uint index,
+            long tileStart, long headerSz,
+            NetworkIndexTileHeaderStruct header,
             NetworkIndexTileSubBlock[] blocks,
             NetworkIndexTileUnknown2F[] unknown2FloatBlocks,
-            NetworkIndexTileDetail detail,
-            NetworkIndexTileUnknownN[] unknownBlocks)
+            long detailStart, long detailSz,
+            NetworkIndexTileDetailStruct detail,
+            NetworkIndexTileUnknownN[] unknownBlocks,
+            long end)
         {
+            this.index = index;
+
             this.tileStart = tileStart;
             this.header = header;
+            this.headerSz = headerSz;
+
             this.blocks = blocks ?? new NetworkIndexTileSubBlock[0];
             this.unknown2FloatBlocks = unknown2FloatBlocks ?? new NetworkIndexTileUnknown2F[0];
+
+            this.detailStart = detailStart;
             this.detail = detail;
+            this.detailSz = detailSz;
+
             this.unknownBlocks = unknownBlocks ?? new NetworkIndexTileUnknownN[0];
+
+            this.sz = end - tileStart;
+        }
+
+        public ReadResult[] ReadResultComponents
+        {
+            get
+            {
+                ReadResult r;
+                return new ReadResult[]{
+                    r = new ReadResultWrapper(tileStart, headerSz, "NetworkIndexTileHeader"),
+                    r = ReadResultWrapper.wrap(r, blocks, "NetworkIndexTileSubBlocks"),
+                    r = ReadResultWrapper.wrap(r, unknown2FloatBlocks, "NetworkIndexTileUnknowns2F"),
+                    r = new ReadResultWrapper(detailStart, detailSz, "NetworkIndexTileDetail"),
+                    r = ReadResultWrapper.wrap(r, unknownBlocks, "NetworkIndexTileUnknownsN"),
+                };
+            }
         }
 
         public T[] treeNodes<T>(TreeNodeMaker<T> maker)
@@ -91,104 +185,119 @@ namespace Sc4Network
                 maker(string.Format("unknownBlock: {0}", 2), detail.unknownBlock3.treeNodes(maker)),
                 maker(string.Format("unknownBlock: {0}", 3), detail.unknownBlock4.treeNodes(maker)),
                 maker(string.Format("unknown: {0}", detail.unknownShort1), null),
-                maker(string.Format("blocksCount: {0}", detail.blocksCount), RecursiveTreeNode.recurse(maker, unknownBlocks)),
-        };
+                maker(string.Format("blocksCount: {0}", unknownBlocks.Length), RecursiveTreeNode.recurse(maker, unknownBlocks)),
+            };
         }
 
-        public static NetworkIndexTile instantiate(MemoryMappedViewAccessor accessor, long tileStart, out long pos)
+        public static NetworkIndexTile instantiate(MemoryMappedViewAccessor accessor, uint i, long tileStart, out long pos)
         {
-            NetworkIndexTileHeader _header = new NetworkIndexTileHeader();
+            NetworkIndexTileHeaderStruct _header = new NetworkIndexTileHeaderStruct();
             NetworkIndexTileSubBlock[] _blocks;
-            NetworkIndexTileDetail _detail = new NetworkIndexTileDetail();
+            NetworkIndexTileDetailStruct _detail = new NetworkIndexTileDetailStruct();
             NetworkIndexTileUnknown2F[] _blocks2F;
             NetworkIndexTileUnknownN[] _blocksN;
 
-            pos = _header.Read(accessor, tileStart);
+            pos = _header.Read(accessor, tileStart); long headerSz = pos - tileStart;
 
-            _blocks = new NetworkIndexTileSubBlock[_header.blockCount];
-            for (int j = 0; j < _blocks.Length; j++)
-                _blocks[j] = NetworkIndexTileSubBlock.instantiate(accessor, pos, out pos);
+            _blocks = new NetworkIndexTileSubBlock[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
+            for (uint j = 0; j < _blocks.Length; j++)
+                _blocks[j] = NetworkIndexTileSubBlock.instantiate(accessor, j, pos, out pos);
 
             _blocks2F = new NetworkIndexTileUnknown2F[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
             for (int j = 0; j < _blocks2F.Length; j++)
-                pos = _blocks2F[j].Read(accessor, pos);
+                pos = (_blocks2F[j] = new NetworkIndexTileUnknown2F(i)).Read(accessor, pos);
 
-            pos = _detail.Read(accessor, pos);
+            long detailStart = pos; pos = _detail.Read(accessor, pos); long detailSz = pos - detailStart;
 
-            _blocksN = new NetworkIndexTileUnknownN[_detail.blocksCount];
+            _blocksN = new NetworkIndexTileUnknownN[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
             for (int j = 0; j < _blocksN.Length; j++)
-                pos = _blocksN[j].Read(accessor, pos);
+                pos = (_blocksN[j] = new NetworkIndexTileUnknownN(i)).Read(accessor, pos);
 
-            return new NetworkIndexTile(tileStart, _header, _blocks, _blocks2F, _detail, _blocksN);
+            return new NetworkIndexTile(i, tileStart, headerSz, _header, _blocks, _blocks2F, detailStart, detailSz, _detail, _blocksN, pos);
+        }
+
+        public string getName()
+        {
+            return string.Format("NetworkIndexTile[{0}]", Index);
         }
     }
 
-    public class NetworkIndexSubFile : TreeNodeProvider
+    public class NetworkIndexBlock : StructTreeNodeProviderReadResult<INetworkIndexBlockStruct>, INetworkIndexBlockStruct
     {
-        public readonly NetworkIndexHeader header;
+        public uint linkPtr { get { return value.linkPtr; } }
+        public uint subfileTypeId { get { return value.subfileTypeId; } }
+        public byte unknownByte { get { return value.unknownByte; } }
+        public uint unknown { get { return value.unknown; } }
+        public NetworkIndexBlockUnknown4Struct unknown1 { get { return value.unknown1; } }
+        public NetworkIndexBlockUnknown4Struct unknown2 { get { return value.unknown2; } }
+        public NetworkIndexBlockUnknown4Struct unknown3 { get { return value.unknown3; } }
+        public NetworkIndexBlockUnknown4Struct unknown4 { get { return value.unknown4; } }
+
+        public NetworkIndexBlock(uint i, INetworkIndexBlockStruct value) : base(string.Format("NetworkIndexBlock[{0}]", i), value) { }
+    }
+
+    public class NetworkIndexUnknownBlock4I : StructTreeNodeProviderReadResult<NetworkIndexUnknownBlock4IStruct>
+    {
+        public NetworkIndexUnknownBlock4I(uint index) : base(string.Format("NetworkIndexTileUnknown2F[{0}]", index)) { }
+    }
+
+    public class NetworkIndexUnknownBlock : StructTreeNodeProviderReadResult<NetworkIndexUnknownBlockStruct>
+    {
+        public NetworkIndexUnknownBlock(uint index) : base(string.Format("NetworkIndexUnknownBlock[{0}]", index)) { }
+    }
+
+
+    public class NetworkIndexSubFile : TreeNodeProvider, ReadResult
+    {
+        public readonly long headerStart, headerSz;
+        public readonly NetworkIndexHeaderStruct header;
+
         public readonly NetworkIndexTile[] tiles;
-        public readonly NetworkIndexBlockV7[] blocksV7;
-        public readonly NetworkIndexUnknownBlock[] unknownBlocks;
-        public readonly NetworkIndexTrailer trailer;
-        public readonly long tilesEnd;
-        public readonly long blocksEnd;
-        public readonly long unknownBlocksEnd;
-        public readonly long trailerEnd;
-        public readonly NetworkIndexUnknownBlock4I[] unknown4IBlocks;
-        public readonly long unknown4IBlocksEnd;
         public readonly NetworkIndexBlock[] blocks;
+        public readonly NetworkIndexUnknownBlock4I[] unknown4IBlocks;
 
-        public NetworkIndexSubFile(NetworkIndexHeader header,
-            NetworkIndexTile[] tiles, long tilesEnd,
-            NetworkIndexBlockV7[] blocksV7, long blocksEnd,
-            NetworkIndexUnknownBlock4I[] unknown4IBlocks, long unknown4IBlocksEnd,
-            NetworkIndexTrailer trailer, long trailerEnd,
-            NetworkIndexUnknownBlock[] unknownBlocks, long unknownBlocksEnd)
-        {
-            this.header = header;
-            this.tiles = tiles ?? new NetworkIndexTile[0];
-            this.tilesEnd = tilesEnd;
-            this.blocksV7 = blocksV7 ?? new NetworkIndexBlockV7[0];
-            this.blocksEnd = blocksEnd;
-            this.unknown4IBlocks = unknown4IBlocks ?? new NetworkIndexUnknownBlock4I[0];
-            this.unknown4IBlocksEnd = unknown4IBlocksEnd;
-            this.trailer = trailer;
-            this.trailerEnd = trailerEnd;
-            this.unknownBlocks = unknownBlocks ?? new NetworkIndexUnknownBlock[0];
-            this.unknownBlocksEnd = unknownBlocksEnd;
-        }
+        public readonly long trailerStart, trailerSz;
+        public readonly NetworkIndexTrailerStruct trailer;
 
-        public NetworkIndexSubFile(NetworkIndexHeader header,
-            NetworkIndexTile[] tiles, long tilesEnd,
-            NetworkIndexBlock[] blocks, long blocksEnd,
-            NetworkIndexUnknownBlock4I[] unknown4IBlocks, long unknown4IBlocksEnd,
-            NetworkIndexTrailer trailer, long trailerEnd,
-            NetworkIndexUnknownBlock[] unknownBlocks, long unknownBlocksEnd)
+        public readonly NetworkIndexUnknownBlock[] unknownBlocks;
+
+        public readonly long sz;
+
+        public long Bytes { get { return 0; } }
+        public long Pos { get { return headerStart; } }
+        public long Sz { get { return sz; } }
+
+        public NetworkIndexSubFile(long headerStart, NetworkIndexHeaderStruct header, long headerSz,
+            NetworkIndexTile[] tiles,
+            NetworkIndexBlock[] blocks,
+            NetworkIndexUnknownBlock4I[] unknown4IBlocks,
+            NetworkIndexTrailerStruct trailer, long trailerStart, long trailerSz,
+            NetworkIndexUnknownBlock[] unknownBlocks,
+            long sz)
         {
+            this.headerStart = headerStart;
             this.header = header;
+            this.headerSz = headerSz;
             this.tiles = tiles ?? new NetworkIndexTile[0];
-            this.tilesEnd = tilesEnd;
             this.blocks = blocks ?? new NetworkIndexBlock[0];
-            this.blocksEnd = blocksEnd;
             this.unknown4IBlocks = unknown4IBlocks ?? new NetworkIndexUnknownBlock4I[0];
-            this.unknown4IBlocksEnd = unknown4IBlocksEnd;
             this.trailer = trailer;
-            this.trailerEnd = trailerEnd;
-            this.unknownBlocks = unknownBlocks ?? new NetworkIndexUnknownBlock[0];
-            this.unknownBlocksEnd = unknownBlocksEnd;
+            this.trailerStart = trailerStart;
+            this.trailerSz = trailerSz;
+            this.unknownBlocks = unknownBlocks;
+            this.sz = sz;
         }
 
-        public static NetworkIndexSubFile instantiate(MemoryMappedViewAccessor accessor, out long pos)
+        public static NetworkIndexSubFile instantiate(MemoryMappedViewAccessor accessor, long start, out long pos)
         {
-            NetworkIndexHeader header = new NetworkIndexHeader();
+            NetworkIndexHeaderStruct header = new NetworkIndexHeaderStruct();
             NetworkIndexTile[] tiles;
-            NetworkIndexBlockV7[] blocks7;
             NetworkIndexBlock[] blocks;
             NetworkIndexUnknownBlock4I[] unknown4IBlocks;
-            NetworkIndexTrailer trailer = new NetworkIndexTrailer();
+            NetworkIndexTrailerStruct trailer = new NetworkIndexTrailerStruct();
             NetworkIndexUnknownBlock[] unknownBlocks;
 
-            pos = header.Read(accessor, 0);
+            pos = header.Read(accessor, start); long headerSz = pos - start;
 
             switch (header.verMajor)
             {
@@ -202,64 +311,50 @@ namespace Sc4Network
             }
 
             tiles = new NetworkIndexTile[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
-            for (int i = 0; i < tiles.Length; i++)
-                tiles[i] = NetworkIndexTile.instantiate(accessor, pos, out pos);
+            for (uint i = 0; i < tiles.Length; i++)
+                tiles[i] = NetworkIndexTile.instantiate(accessor, i, pos, out pos);
             long tilesEnd = pos;
 
-            // 3 = 011
-            // 4 = 100
-            // 6 = 110
-            // 7 = 111
-
-            long blocksEnd, trailerEnd, unknownBlocksEnd;
+            blocks = new NetworkIndexBlock[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
 
             switch (header.verMajor)
             {
                 case 3:
                 case 4:
                 case 6:
-                    blocks = new NetworkIndexBlock[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
-                    for (int i = 0; i < blocks.Length; i++)
-                        pos = blocks[i].Read(accessor, pos);
-                    blocks7 = null;
+                    for (uint i = 0; i < blocks.Length; i++)
+                        pos = (blocks[i] = new NetworkIndexBlock(i, new NetworkIndexBlockPre7Struct())).Read(accessor, pos, i);
                     break;
                 default:
-                    blocks = null;
-                    blocks7 = new NetworkIndexBlockV7[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
-                    for (int i = 0; i < blocks7.Length; i++)
-                        pos = blocks7[i].Read(accessor, pos);
+                    for (uint i = 0; i < blocks.Length; i++)
+                        pos = (blocks[i] = new NetworkIndexBlock(i, new NetworkIndexBlockV7Struct())).Read(accessor, pos, i);
                     break;
             }
-            blocksEnd = pos;
 
             unknown4IBlocks = new NetworkIndexUnknownBlock4I[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
-            for (int i = 0; i < unknown4IBlocks.Length; i++)
-                pos = unknown4IBlocks[i].Read(accessor, pos);
-            long unknown4IBlocksEnd = pos;
+            for (uint i = 0; i < unknown4IBlocks.Length; i++)
+                pos = (unknown4IBlocks[i] = new NetworkIndexUnknownBlock4I(i)).Read(accessor, pos);
 
+            long trailerStart = pos;
             pos = trailer.Read(accessor, pos);
-            trailerEnd = pos;
+            long trailerSz = pos - trailerStart;
 
             switch (header.verMajor)
             {
                 case 6:
                 case 7:
                     unknownBlocks = new NetworkIndexUnknownBlock[accessor.ReadUInt32(pos)]; pos += Marshal.SizeOf(typeof(UInt32));
-                    for (int i = 0; i < unknownBlocks.Length; i++)
-                        pos = (unknownBlocks[i] = new NetworkIndexUnknownBlock()).Read(accessor, pos);
+                    for (uint i = 0; i < unknownBlocks.Length; i++)
+                        pos = (unknownBlocks[i] = new NetworkIndexUnknownBlock(i)).Read(accessor, pos);
                     break;
                 default:
                     unknownBlocks = null;
                     break;
             }
-            unknownBlocksEnd = pos;
+            long sz = pos - start;
 
             NetworkIndexSubFile f =
-                blocks7 == null ?
-                new NetworkIndexSubFile(header, tiles, tilesEnd, blocks, blocksEnd, unknown4IBlocks, unknown4IBlocksEnd,
-                    trailer, trailerEnd, unknownBlocks, unknownBlocksEnd) :
-                new NetworkIndexSubFile(header, tiles, tilesEnd, blocks7, blocksEnd, unknown4IBlocks, unknown4IBlocksEnd,
-                    trailer, trailerEnd, unknownBlocks, unknownBlocksEnd);
+                new NetworkIndexSubFile(start, header, headerSz, tiles, blocks, unknown4IBlocks, trailer, trailerStart, trailerSz, unknownBlocks, sz);
             return f;
         }
 
@@ -271,9 +366,7 @@ namespace Sc4Network
                 maker(string.Format("ptr1: {0:X8}", header.ptr1), null),
                 maker(string.Format("verMajor: {0:X4}", header.verMajor), null),
                 maker(string.Format("tiles: {0}", tiles.Length), RecursiveTreeNode.recurse(maker, tiles)),
-                maker(string.Format("blocks{0}: {1}",
-                        blocks == null? "V7": "", blocks == null? blocksV7.Length: blocks.Length),
-                        blocks == null? RecursiveTreeNode.recurse(maker, blocksV7): RecursiveTreeNode.recurse(maker, blocks)),
+                maker(string.Format("blocksV{0}: {1}",header.verMajor), RecursiveTreeNode.recurse(maker, blocks)),
                 maker(string.Format("unknown4IBlocks: {0}", unknown4IBlocks.Length), RecursiveTreeNode.recurse(maker, unknown4IBlocks)),
                 maker(string.Format("unknown: {0:X8}", trailer.unknown2), null),
                 maker(string.Format("unknown: {0:X8}", trailer.unknown3), null),
@@ -283,33 +376,29 @@ namespace Sc4Network
                 maker(string.Format("unknown: {0}", trailer.Unknown5), null),
                 maker(string.Format("unknown: {0}", trailer.unknown6), null),
                 maker(string.Format("unknown: {0}", trailer.Unknown7), null),
-                maker(string.Format("unknownBlocks: {0}", unknownBlocks.Length), RecursiveTreeNode.recurse(maker, unknownBlocks)),
+                unknownBlocks == null? maker("unknownBlocks: null", null): maker(string.Format("unknownBlocks: {0}", unknownBlocks.Length), RecursiveTreeNode.recurse(maker, unknownBlocks)),
             };
         }
-    }
 
-    internal interface TreeNodeProvider
-    {
-        T[] treeNodes<T>(TreeNodeMaker<T> maker);
-    }
-
-    internal class RecursiveTreeNode
-    {
-        public readonly string text;
-        public readonly RecursiveTreeNode[] children;
-
-        public RecursiveTreeNode(string text, RecursiveTreeNode[] children)
+        public ReadResult[] ReadResultComponents
         {
-            this.text = text;
-            this.children = children;
+            get
+            {
+                ReadResult r;
+                return new ReadResult[] {
+                    r = new ReadResultWrapper(headerStart, headerSz, "NetworkIndexHeader"),
+                    r = ReadResultWrapper.wrap(r,tiles, "NetworkIndexTiles"),
+                    r = ReadResultWrapper.wrap(r,blocks, "NetworkIndexBlocks"),
+                    r = ReadResultWrapper.wrap(r,unknown4IBlocks, "NetworkIndexUnknownBlocks4I"),
+                    r = new ReadResultWrapper(trailerStart, trailerSz, "NetworkIndexTrailer"),
+                    r = ReadResultWrapper.wrap(r,unknownBlocks, "NetworkIndexUnknownBlocks"),
+                };
+            }
         }
 
-        internal static T[] recurse<T, U>(TreeNodeMaker<T> maker, U[] source) where U : TreeNodeProvider
+        public string getName()
         {
-            T[] children = new T[source.Length];
-            for (int i = 0; i < children.Length; i++)
-                children[i] = maker(i.ToString(), source[i].treeNodes(maker));
-            return children;
+            return null;
         }
     }
 }

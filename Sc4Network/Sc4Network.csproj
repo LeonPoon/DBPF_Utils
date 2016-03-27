@@ -44,6 +44,12 @@
     <Compile Include="Structs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GenUtils\GenUtils.csproj">
+      <Project>{8100a14f-b0cc-41ef-8d44-42794a160886}</Project>
+      <Name>GenUtils</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
