@@ -141,7 +141,7 @@ namespace DatabasePackedFileViewer
         public static bool detectBinary(byte[] bytes)
         {
             foreach (byte b in bytes)
-                if (!isPrintable(b))
+                if (!isPrintable(b) && b != '\r' && b != '\n' && b != '\t')
                     return true;
             return false;
         }
