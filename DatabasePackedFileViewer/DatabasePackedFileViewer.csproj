@@ -64,6 +64,12 @@
       <DependentUpon>MyTabPage.cs</DependentUpon>
     </Compile>
     <Compile Include="NamesByTGI.cs" />
+    <Compile Include="TextDisplay.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TextDisplay.Designer.cs">
+      <DependentUpon>TextDisplay.cs</DependentUpon>
+    </Compile>
     <Compile Include="TreeNodes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -94,6 +100,9 @@
     </Compile>
     <EmbeddedResource Include="ImageDisplay.resx">
       <DependentUpon>ImageDisplay.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TextDisplay.resx">
+      <DependentUpon>TextDisplay.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

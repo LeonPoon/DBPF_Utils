@@ -1,9 +1,24 @@
-﻿using System;
+﻿/**************************************************************************
+ * Copyright 2016 Leon Poon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
+using System;
 using DBPF;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.IO.MemoryMappedFiles;
-using System.Text;
 
 namespace DatabasePackedFileViewer
 {
@@ -48,31 +63,9 @@ namespace DatabasePackedFileViewer
         Control createControl(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
     }
 
-    internal class BaseDisplayInfo : DisplayInfo
-    {
-        public Control createControl(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
-        {
-            byte[] bytes = new byte[sz];
-            accessor.ReadArray(0, bytes, 0, bytes.Length);
-            var lbl = new Label();
-            lbl.Text = Encoding.ASCII.GetString(bytes);
-            return lbl;
-        }
-
-        public string getExtensionFilter(MemoryMappedViewAccessor accessor, long sz)
-        {
-            return "Binary file|*.bin";
-        }
-
-        public string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
-        {
-            return model.ToString();
-        }
-    }
-
     public class DefaultViewerFactory : ViewerFactory
     {
-        private static DisplayInfo DEFAULT_DISPLAY_INFO = new BaseDisplayInfo();
+        private static DisplayInfo DEFAULT_DISPLAY_INFO = new TextDisplayInfo();
         private string name;
 
         public DefaultViewerFactory(String s)
