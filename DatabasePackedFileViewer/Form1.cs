@@ -20,6 +20,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace DatabasePackedFileViewer
@@ -258,6 +260,47 @@ namespace DatabasePackedFileViewer
         private void gCToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GC.Collect();
+        }
+
+        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            BackgroundWorker w = (BackgroundWorker)sender;
+            for (int i = 0; !w.CancellationPending; i++)
+            {
+                w.ReportProgress(i, e.Argument);
+                Thread.Sleep(1);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            InstanceTreeNode n = (InstanceTreeNode)e.UserState;
+            var m = n.Tag;
+            XTabPage p = m.TabPage;
+            if (p == null)
+                openModel(n, m);
+            else
+                closeTab(tabControl1, p);
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            if (backgroundWorker1.IsBusy)
+                backgroundWorker1.CancelAsync();
+            else
+                backgroundWorker1.RunWorkerAsync(findNode(treeView1.Nodes));
+        }
+
+        private InstanceTreeNode findNode(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                var instanceNode = node as InstanceTreeNode;
+                if ((instanceNode ?? (instanceNode = findNode(node.Nodes))) != null)
+                    return instanceNode;
+            }
+            return null;
         }
     }
 }
