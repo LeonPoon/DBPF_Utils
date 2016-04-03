@@ -125,34 +125,20 @@ namespace DatabasePackedFileViewer
 
         private void openModel(TreeNode node, EntryModel model)
         {
-            XTabPage tabPage = model.TabPage;
+            ViewModel viewModel = model.ViewModel;
 
-            if (tabPage == null)
+            if (viewModel == null)
             {
-                long sz;
-                var accessor = model.getAccessor(out sz);
-                try
-                {
-                    var view = model.factory.createView(model, accessor, sz);
-                    tabPage = model.TabPage = new XTabPage(view);
-                    tabControl1.TabPages.Add(tabPage);
-                    tabPage.control.saveButton_Clicked += delegate (object sender, EventArgs e) { saveButton_Clicked((XTabPage)sender, e); };
-                    tabPage.control.closeButton_Clicked += delegate (object sender, EventArgs e) { closeButton_Clicked((XTabPage)sender, e); }; ;
-                }
-                catch { accessor.Dispose(); throw; }
+                viewModel = model.factory.createViewModel(model);
+                XTabPage tabPage = viewModel.tabPage = new XTabPage();
+                tabPage.ViewModel = viewModel;
+                tabPage.myTabPage.saveButton.Click += delegate (object sender, EventArgs e) { saveFile(viewModel.model, tabPage.Text); };
+                tabPage.myTabPage.closeButton.Click += delegate (object sender, EventArgs e) { closeTab(tabControl1, tabPage); }; ;
+
+                tabControl1.TabPages.Add(tabPage);
             }
 
-            tabControl1.SelectedTab = tabPage;
-        }
-
-        private void closeButton_Clicked(XTabPage sender, EventArgs e)
-        {
-            closeTab(tabControl1, sender);
-        }
-
-        private void saveButton_Clicked(XTabPage sender, EventArgs e)
-        {
-            saveFile(sender.Tag.model, sender.Text);
+            tabControl1.SelectedTab = viewModel.tabPage;
         }
 
         private void contextMenuStripTreeNodeRClick_Opening(object sender, CancelEventArgs e)
@@ -188,7 +174,7 @@ namespace DatabasePackedFileViewer
             List<XTabPage> tabpages = new List<XTabPage>();
             foreach (XTabPage tab in tabControl1.TabPages)
             {
-                EntryModel m = tab.Tag.model;
+                EntryModel m = tab.ViewModel.model;
                 TreeNode node = m.TreeNode;
                 while (node != null)
                     if (node == rootNode)
@@ -205,8 +191,8 @@ namespace DatabasePackedFileViewer
 
         private void closeTab(TabControl tabControl1, XTabPage tab)
         {
-            tab.doClosing();
             tabControl1.TabPages.Remove(tab);
+            tab.Dispose();
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -237,24 +223,31 @@ namespace DatabasePackedFileViewer
             saveFileDialog1.Title = string.Format("Save {0}", saveFileDialog1.FileName = fileName);
 
             long sz;
-            using (var r = model.getAccessor(out sz))
-            {
-                saveFileDialog1.Filter = model.factory.getExtensionFilter(model, r, sz);
-                saveFileDialog1.DefaultExt = saveFileDialog1.Filter.Split('|')[1].Split(new char[] { '.' }, 2)[1];
-                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            MemoryMappedFile mmf;
+            using (var r = model.getAccessor(out mmf, out sz))
+                try
                 {
-                    using (var w = saveFileDialog1.OpenFile())
+                    saveFileDialog1.Filter = model.factory.getExtensionFilter(model, r, sz);
+                    saveFileDialog1.DefaultExt = saveFileDialog1.Filter.Split('|')[1].Split(new char[] { '.' }, 2)[1];
+                    if (saveFileDialog1.ShowDialog() == DialogResult.OK)
                     {
-                        byte[] bytes = new byte[4096];
-                        for (long pos = 0, s; sz > 0; pos += s, sz -= s)
+                        using (var w = saveFileDialog1.OpenFile())
                         {
-                            s = sz > bytes.Length ? bytes.Length : sz;
-                            r.ReadArray(pos, bytes, 0, (int)s);
-                            w.Write(bytes, 0, (int)s);
+                            byte[] bytes = new byte[4096];
+                            for (long pos = 0, s; sz > 0; pos += s, sz -= s)
+                            {
+                                s = sz > bytes.Length ? bytes.Length : sz;
+                                r.ReadArray(pos, bytes, 0, (int)s);
+                                w.Write(bytes, 0, (int)s);
+                            }
                         }
                     }
                 }
-            }
+                finally
+                {
+                    if (mmf != null)
+                        mmf.Dispose();
+                }
         }
 
         private void gCToolStripMenuItem_Click(object sender, EventArgs e)
@@ -267,21 +260,33 @@ namespace DatabasePackedFileViewer
             BackgroundWorker w = (BackgroundWorker)sender;
             for (int i = 0; !w.CancellationPending; i++)
             {
-                w.ReportProgress(i, e.Argument);
-                Thread.Sleep(1);
+                Barrier barrier = new Barrier(2);
+                object o = new Tuple<Barrier, object>(barrier, e.Argument);
+                w.ReportProgress(i, o);
+                barrier.SignalAndWait();
             }
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
         private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            InstanceTreeNode n = (InstanceTreeNode)e.UserState;
-            var m = n.Tag;
-            XTabPage p = m.TabPage;
-            if (p == null)
-                openModel(n, m);
-            else
-                closeTab(tabControl1, p);
+            var bgw = (BackgroundWorker)sender;
+            if (e.ProgressPercentage > 50)
+            {
+                bgw.CancelAsync();
+                return;
+            }
+            Tuple<Barrier, object> o = (Tuple<Barrier, object>)e.UserState;
+            {
+                InstanceTreeNode n = (InstanceTreeNode)o.Item2;
+                var m = n.Tag;
+                var vm = m.ViewModel;
+                if (vm == null)
+                    openModel(n, m);
+                else
+                    closeTab(tabControl1, vm.tabPage);
+                o.Item1.SignalAndWait();
+            }
         }
 
         private void toolStripButton1_Click(object sender, EventArgs e)
@@ -297,7 +302,7 @@ namespace DatabasePackedFileViewer
             foreach (TreeNode node in nodes)
             {
                 var instanceNode = node as InstanceTreeNode;
-                if ((instanceNode ?? (instanceNode = findNode(node.Nodes))) != null)
+                if ((instanceNode ?? (instanceNode = findNode(node.Nodes))) != null && instanceNode.Tag.indexTableEntry.size == 17067760)
                     return instanceNode;
             }
             return null;

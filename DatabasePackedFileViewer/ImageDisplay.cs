@@ -1,11 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿/**************************************************************************
+ * Copyright 2016 Leon Poon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
+using System;
 using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Collections.ObjectModel;
 using System.IO.MemoryMappedFiles;
@@ -20,6 +30,7 @@ namespace DatabasePackedFileViewer
         private static readonly ReadOnlyCollection<ImageDisplayInfo> IMAGE_INFO_COLLECTION = Array.AsReadOnly(new ImageDisplayInfo[] {
             IMAGE_INFO_PNG
         });
+
         private EntryModel model;
         private MemoryMappedViewAccessor accessor;
         private long sz;
@@ -32,15 +43,18 @@ namespace DatabasePackedFileViewer
             return null;
         }
 
-        public ImageDisplay() : this(null, null, null, 0)
+        public ImageDisplay() : this(null, null)
         {
         }
 
-        public ImageDisplay(ImageDisplayInfo imageInf, EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        public ImageDisplay(ImageDisplayInfo imageInf, ViewModel viewModel)
         {
-            this.model = model;
-            this.accessor = accessor;
-            this.sz = sz;
+            if (viewModel != null)
+            {
+                model = viewModel.model;
+                accessor = viewModel.accessor;
+                sz = viewModel.sz;
+            }
             InitializeComponent();
         }
 
@@ -48,6 +62,7 @@ namespace DatabasePackedFileViewer
         {
             if (accessor == null)
                 return;
+            //return;
             byte[] bytes = new byte[sz];
             accessor.ReadArray(0, bytes, 0, bytes.Length);
             using (var ms = new MemoryStream(bytes))
@@ -89,9 +104,9 @@ namespace DatabasePackedFileViewer
             return string.Format("{0} Image", model);
         }
 
-        public Control createControl(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        public Control createControl(ViewModel viewModel)
         {
-            return new ImageDisplay(this, model, accessor, sz);
+            return new ImageDisplay(this, viewModel);
         }
     }
 }

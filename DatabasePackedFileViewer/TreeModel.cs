@@ -1,6 +1,21 @@
-﻿using DBPF;
+﻿/**************************************************************************
+ * Copyright 2016 Leon Poon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
+using DBPF;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -43,7 +58,6 @@ namespace DatabasePackedFileViewer
     internal interface NodeModel
     {
         TreeNode TreeNode { get; }
-        XTabPage TabPage { get; }
     }
 
     public class OpenedFileNode : NodeModel
@@ -53,7 +67,6 @@ namespace DatabasePackedFileViewer
         public readonly TreeNode treeNode = new FileTreeNode();
         internal readonly MemoryMappedFile mmf;
         public TreeNode TreeNode { get { return treeNode; } }
-        public XTabPage TabPage { get { return null; } }
         public readonly NamesByTGI namesProvider = new Simcity4NamesByTGI();
 
         public OpenedFileNode(string fileName, MemoryMappedFile mmf, DBPFile dbpf)
@@ -105,7 +118,6 @@ namespace DatabasePackedFileViewer
     {
         public readonly TreeNode treeNode;
         public TreeNode TreeNode { get { return treeNode; } }
-        public XTabPage TabPage { get { return null; } }
 
         public NodesByNameModel(string nodeName)
         {
@@ -129,8 +141,6 @@ namespace DatabasePackedFileViewer
         private readonly TreeNode rootNodeByName;
         public TreeNode TreeNode { get { return rootNodeByName; } }
 
-        public XTabPage TabPage { get { return null; } }
-
         public NodesByNameRootModel(TreeNode rootNodeByName)
         {
             (this.rootNodeByName = rootNodeByName).Tag = this;
@@ -153,15 +163,24 @@ namespace DatabasePackedFileViewer
         public readonly IndexTableEntry indexTableEntry;
         private readonly DBDirectoryEntry dBDirectoryEntry;
         public readonly TreeNode treeNode;
-        public TreeNode TreeNode { get { return treeNode; } }
-        private XTabPage tabPage;
         public readonly ViewerFactory factory;
         public readonly OpenedFileNode fileNode;
 
-        public XTabPage TabPage
+        public TreeNode TreeNode { get { return treeNode; } }
+
+        private ViewModel viewModel;
+        public ViewModel ViewModel
         {
-            get { return tabPage; }
-            internal set { tabPage = value; }
+            get { return viewModel; }
+            set
+            {
+                ViewModel viewModel = this.viewModel;
+                if (value == viewModel)
+                    return;
+                if (value != null && viewModel != null)
+                    throw new ArgumentException();
+                this.viewModel = value;
+            }
         }
 
         public EntryModel(OpenedFileNode fileNode, IndexTableEntry indexTableEntry, TreeNode treeNode) : this(fileNode, indexTableEntry, null, treeNode)
@@ -192,17 +211,20 @@ namespace DatabasePackedFileViewer
             return factory.getCategoryName(this, null, 0);
         }
 
-        internal MemoryMappedViewAccessor getAccessor(out long sz)
+        internal MemoryMappedViewAccessor getAccessor(out MemoryMappedFile mmf, out long sz)
         {
             sz = indexTableEntry.size;
             var accessor = fileNode.mmf.CreateViewAccessor(indexTableEntry.fileOffset, sz, MemoryMappedFileAccess.Read);
             if (dBDirectoryEntry == null)
+            {
+                mmf = null;
                 return accessor;
+            }
 
             try
             {
                 sz = dBDirectoryEntry.size;
-                var mmf = MemoryMappedFile.CreateNew(Guid.NewGuid().ToString(), sz);
+                mmf = MemoryMappedFile.CreateNew(Guid.NewGuid().ToString(), sz);
                 using (var accessor_w = mmf.CreateViewAccessor(0, sz, MemoryMappedFileAccess.ReadWrite))
                     for (long decom = fileNode.dbpf.decompress(accessor, accessor_w); decom != sz;)
                         throw new ArgumentOutOfRangeException(string.Format("decompressed bytes: expected={0}, actual={1}", sz, decom));

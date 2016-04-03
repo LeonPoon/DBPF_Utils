@@ -19,32 +19,54 @@ using DBPF;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.IO.MemoryMappedFiles;
+using System.ComponentModel;
 
 namespace DatabasePackedFileViewer
 {
-    public class ViewModel : IDisposable
+    public class ViewModel : Component
     {
         public readonly MemoryMappedViewAccessor accessor;
-        public readonly DisplayInfo disp;
+        public readonly DisplayInfo dispInfo;
         public readonly EntryModel model;
         public readonly long sz;
+        private readonly MemoryMappedFile mmf;
 
-        public ViewModel(EntryModel model, MemoryMappedViewAccessor accessor, long sz, DisplayInfo disp)
+        public XTabPage tabPage;
+
+        public ViewModel(EntryModel model, MemoryMappedFile mmf, MemoryMappedViewAccessor accessor, long sz, DisplayInfo dispInfo)
         {
+            this.mmf = mmf;
             this.model = model;
             this.accessor = accessor;
             this.sz = sz;
-            this.disp = disp;
+            this.dispInfo = dispInfo;
+            model.ViewModel = this;
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            accessor.Dispose();
+            model.ViewModel = null;
+            try
+            {
+                base.Dispose(disposing);
+            }
+            finally
+            {
+                try
+                {
+                    accessor.Dispose();
+                }
+                finally
+                {
+                    if (mmf != null)
+                        mmf.Dispose();
+                }
+            }
         }
 
         internal string getViewName()
         {
-            return disp.getViewName(model, accessor, sz);
+            return dispInfo.getViewName(model, accessor, sz);
         }
     }
 
@@ -52,7 +74,7 @@ namespace DatabasePackedFileViewer
     {
         string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
         string getCategoryName(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
-        ViewModel createView(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
+        ViewModel createViewModel(EntryModel model);
         string getExtensionFilter(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
     }
 
@@ -60,7 +82,7 @@ namespace DatabasePackedFileViewer
     {
         string getExtensionFilter(MemoryMappedViewAccessor accessor, long sz);
         string getViewName(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
-        Control createControl(EntryModel model, MemoryMappedViewAccessor accessor, long sz);
+        Control createControl(ViewModel viewModel);
     }
 
     public class DefaultViewerFactory : ViewerFactory
@@ -73,11 +95,22 @@ namespace DatabasePackedFileViewer
             this.name = s;
         }
 
-        public ViewModel createView(EntryModel model, MemoryMappedViewAccessor accessor, long sz)
+        public ViewModel createViewModel(EntryModel model)
         {
-            var disp = getDisplayInfo(model, accessor, sz);
-            var view = new ViewModel(model, accessor, sz, disp);
-            return view;
+            long sz;
+            MemoryMappedFile mmf;
+            var accessor = model.getAccessor(out mmf, out sz);
+            try
+            {
+                var disp = getDisplayInfo(model, accessor, sz);
+                var view = new ViewModel(model, mmf, accessor, sz, disp);
+                return view;
+            }
+            catch
+            {
+                accessor.Dispose();
+                throw;
+            }
         }
 
         private DisplayInfo getDisplayInfo(EntryModel model, MemoryMappedViewAccessor accessor, long sz)

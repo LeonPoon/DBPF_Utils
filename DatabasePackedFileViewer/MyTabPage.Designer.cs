@@ -75,7 +75,6 @@
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new System.Drawing.Size(51, 22);
             this.saveButton.Text = "Save";
-            this.saveButton.Click += new System.EventHandler(this.saveButton_Click);
             // 
             // closeButton
             // 
@@ -84,7 +83,6 @@
             this.closeButton.Name = "closeButton";
             this.closeButton.Size = new System.Drawing.Size(56, 22);
             this.closeButton.Text = "Close";
-            this.closeButton.Click += new System.EventHandler(this.closeButton_Click);
             // 
             // MyTabPage
             // 
@@ -107,7 +105,7 @@
 
         private System.Windows.Forms.ToolStripContainer toolStripContainer1;
         private System.Windows.Forms.ToolStrip toolStrip1;
-        private System.Windows.Forms.ToolStripButton saveButton;
-        private System.Windows.Forms.ToolStripButton closeButton;
+        public System.Windows.Forms.ToolStripButton saveButton;
+        public System.Windows.Forms.ToolStripButton closeButton;
     }
 }
