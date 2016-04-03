@@ -160,16 +160,21 @@ namespace DatabasePackedFileViewer
 
     internal class TextDisplayInfo : DisplayInfo
     {
-        public Control createControl(ViewModel viewModel)
+        public virtual Control createControl(ViewModel viewModel)
         {
             EntryModel model = viewModel.model;
             MemoryMappedViewAccessor accessor = viewModel.accessor;
             long sz = viewModel.sz;
             byte[] bytes = new byte[sz];
             accessor.ReadArray(0, bytes, 0, bytes.Length);
-            TextDisplay disp = new TextDisplay();
+            TextDisplay disp = createControl();
             disp.Bytes = bytes;
             return disp;
+        }
+
+        protected virtual TextDisplay createControl()
+        {
+            return new TextDisplay();
         }
 
         public string getExtensionFilter(MemoryMappedViewAccessor accessor, long sz)

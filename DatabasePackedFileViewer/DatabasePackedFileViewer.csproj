@@ -64,6 +64,7 @@
       <DependentUpon>MyTabPage.cs</DependentUpon>
     </Compile>
     <Compile Include="NamesByTGI.cs" />
+    <Compile Include="Sc4Network.cs" />
     <Compile Include="TextDisplay.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -121,6 +122,14 @@
     <ProjectReference Include="..\DBPF\DBPF.csproj">
       <Project>{12a0d64f-8646-454a-a654-f58e210fa171}</Project>
       <Name>DBPF</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\GenUtils\GenUtils.csproj">
+      <Project>{8100a14f-b0cc-41ef-8d44-42794a160886}</Project>
+      <Name>GenUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Sc4Network\Sc4Network.csproj">
+      <Project>{e4a38c77-84bc-4cde-8c0a-1be603a265b3}</Project>
+      <Name>Sc4Network</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
