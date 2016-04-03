@@ -34,6 +34,7 @@
             System.Windows.Forms.ToolStrip toolStrip1;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             System.Windows.Forms.ToolStripButton toolStripButton1;
+            System.Windows.Forms.ToolStripStatusLabel lblFiller;
             this.treeView1 = new System.Windows.Forms.TreeView();
             this.contextMenuStripTreeNodeRClick = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemCloseFile = new System.Windows.Forms.ToolStripMenuItem();
@@ -56,10 +57,13 @@
             this.bgWorkerOpenFile = new System.ComponentModel.BackgroundWorker();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.lblMem = new System.Windows.Forms.ToolStripStatusLabel();
+            this.memTimer = new System.Windows.Forms.Timer(this.components);
             panel2 = new System.Windows.Forms.Panel();
             panel1 = new System.Windows.Forms.Panel();
             toolStrip1 = new System.Windows.Forms.ToolStrip();
             toolStripButton1 = new System.Windows.Forms.ToolStripButton();
+            lblFiller = new System.Windows.Forms.ToolStripStatusLabel();
             panel2.SuspendLayout();
             this.contextMenuStripTreeNodeRClick.SuspendLayout();
             panel1.SuspendLayout();
@@ -222,7 +226,8 @@
             // gCToolStripMenuItem
             // 
             this.gCToolStripMenuItem.Name = "gCToolStripMenuItem";
-            this.gCToolStripMenuItem.Size = new System.Drawing.Size(90, 22);
+            this.gCToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.G)));
+            this.gCToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.gCToolStripMenuItem.Text = "G&C";
             this.gCToolStripMenuItem.Click += new System.EventHandler(this.gCToolStripMenuItem_Click);
             // 
@@ -244,7 +249,9 @@
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripStatusLabel1});
+            this.toolStripStatusLabel1,
+            lblFiller,
+            this.lblMem});
             this.statusStrip1.Location = new System.Drawing.Point(0, 719);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1096, 22);
@@ -312,6 +319,25 @@
             this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
             this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
             // 
+            // lblMem
+            // 
+            this.lblMem.Name = "lblMem";
+            this.lblMem.Size = new System.Drawing.Size(58, 17);
+            this.lblMem.Text = "Memory: ";
+            this.lblMem.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // lblFiller
+            // 
+            lblFiller.Name = "lblFiller";
+            lblFiller.Size = new System.Drawing.Size(966, 17);
+            lblFiller.Spring = true;
+            // 
+            // memTimer
+            // 
+            this.memTimer.Enabled = true;
+            this.memTimer.Interval = 500;
+            this.memTimer.Tick += new System.EventHandler(this.memTimer_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -372,6 +398,8 @@
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gCToolStripMenuItem;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private System.Windows.Forms.ToolStripStatusLabel lblMem;
+        private System.Windows.Forms.Timer memTimer;
     }
 }
 

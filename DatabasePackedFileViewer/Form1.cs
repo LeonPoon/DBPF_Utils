@@ -18,6 +18,8 @@ using DBPF;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.CompilerServices;
@@ -30,11 +32,13 @@ namespace DatabasePackedFileViewer
     {
         private TreeModel treeModel;
         private delegate void CallableDelegate();
+        private string memText;
 
         public Form1()
         {
             InitializeComponent();
             openFileDialog1.InitialDirectory = Environment.SpecialFolder.MyDocuments.ToString();
+            memText = lblMem.Text;
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -306,6 +310,11 @@ namespace DatabasePackedFileViewer
                     return instanceNode;
             }
             return null;
+        }
+
+        private void memTimer_Tick(object sender, EventArgs e)
+        {
+            lblMem.Text = string.Format("{0}{1}M", memText, (Process.GetCurrentProcess().WorkingSet64 / 1048576).ToString(CultureInfo.InvariantCulture));
         }
     }
 }
